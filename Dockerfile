@@ -36,6 +36,17 @@ RUN apt-get update \
  && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends cmake xxd \
  && rm -rf /var/lib/apt/lists/*
 
+# 1a. NDK header fix: inline/bsdsocket.h (Roadshow TCP/IP's hand-written asm
+#    stubs) hits a GCC 9+ hard error -- a register-pinned input operand also
+#    listed in that same asm statement's clobber list -- that GCC 6.5 (this
+#    image's default base) tolerated. Harmless on every GCC version (removes
+#    a redundant clobber entry, doesn't change codegen); see the script for
+#    the full explanation. Only inline/bsdsocket.h is affected; usergroup.h
+#    was checked and is clean.
+COPY patches/fix-ndk-asm-clobbers.py /tmp/fix-ndk-asm-clobbers.py
+RUN python3 /tmp/fix-ndk-asm-clobbers.py /opt/amiga/m68k-amigaos/ndk-include/inline/bsdsocket.h \
+ && rm /tmp/fix-ndk-asm-clobbers.py
+
 # 2. flexcat -- host (unix) build. The Makefile has a bootstrap cycle: it tries to
 #    run flexcat to regenerate its own committed cat-source files. Touch them so they
 #    look up-to-date, breaking the cycle. Install the resulting native binary on PATH.
