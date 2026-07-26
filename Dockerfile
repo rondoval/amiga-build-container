@@ -1,10 +1,17 @@
 # Shared Amiga (m68k-amigaos) build image for the driver stacks.
 #
 # Base: stefanreinauer/amiga-gcc (PUBLIC, Docker Hub). Provides Bebbo's
-# m68k-amigaos gcc 6.5.0b at /opt/amiga, NDK 3.2 (from Aminet NDK3.2.lha) with
+# m68k-amigaos gcc at /opt/amiga, NDK 3.2 (from Aminet NDK3.2.lha) with
 # libraries/keymap.h, AROS-open <devices/sana2.h> in m68k-amigaos/ndk-include,
 # plus lha / python3 / sfdc / fd2sfd.
 #
+# BASE_TAG selects which upstream gcc build to pin (see
+# https://hub.docker.com/r/stefanreinauer/amiga-gcc/tags). Default is gcc-v6.5.0b
+# (Bebbo's classic port); CI also builds gcc-v13.4, gcc-v15.2 and gcc-v16.1 variants
+# of this same image, see .github/workflows/docker-image.yml.
+ARG BASE_TAG=gcc-v6.5.0b
+FROM stefanreinauer/amiga-gcc:${BASE_TAG}
+
 # This layer adds the few things the stacks need on top of that base:
 #   1. cmake            (the base ships none)
 #   2. flexcat          (built from adtools/flexcat)
@@ -13,7 +20,6 @@
 #
 # Consumers: poseidon-backport uses all of it; emu68-driver-stack uses only the
 # cmake + NDK 3.2 toolchain (it ignores the MUI/flexcat layers).
-FROM stefanreinauer/amiga-gcc:latest
 
 ARG FLEXCAT_VERSION=2.18
 ARG MUI_RELEASE=MUI-5.0-20210831

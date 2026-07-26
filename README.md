@@ -2,12 +2,25 @@
 
 A shared **m68k-amigaos cross-build image** for the Amiga driver/stack projects
 (`poseidon-backport`, `emu68-driver-stack`, …). It is published to
-**`ghcr.io/rondoval/amiga-build-container:latest`** and consumed by those repos' CI.
+**`ghcr.io/rondoval/amiga-build-container`** and consumed by those repos' CI.
+
+## Tags
+
+Built as a matrix over upstream [`stefanreinauer/amiga-gcc`](https://hub.docker.com/r/stefanreinauer/amiga-gcc/tags)
+GCC versions, each with the same cmake/flexcat/MUI layer on top:
+
+| Tag | Upstream base | Notes |
+|---|---|---|
+| `gcc-v6.5.0b` | `stefanreinauer/amiga-gcc:gcc-v6.5.0b` | Bebbo's classic port |
+| `gcc-v13.4` | `stefanreinauer/amiga-gcc:gcc-v13.4` | |
+| `gcc-v15.2` | `stefanreinauer/amiga-gcc:gcc-v15.2` | |
+| `gcc-v16.1` | `stefanreinauer/amiga-gcc:gcc-v16.1` | |
+| `latest` | same as `gcc-v6.5.0b` | default for consumers that don't pin a version |
 
 ## What's in it
 
 It builds `FROM` the public [`stefanreinauer/amiga-gcc`](https://hub.docker.com/r/stefanreinauer/amiga-gcc)
-image (Bebbo's `m68k-amigaos` GCC 6.5.0b at `/opt/amiga`, **NDK 3.2** from Aminet, AROS-open
+image (Bebbo's `m68k-amigaos` GCC at `/opt/amiga`, **NDK 3.2** from Aminet, AROS-open
 `<devices/sana2.h>`, `lha`, `python3`, `sfdc`) and adds:
 
 | Addition | Why |
@@ -41,5 +54,6 @@ developer SDK.
 
 ## Rebuilding
 
-`.github/workflows/docker-image.yml` builds and pushes to GHCR on changes to the `Dockerfile`
-(and on manual `workflow_dispatch`). Locally: `docker build -t amiga-build-container .`
+`.github/workflows/docker-image.yml` builds and pushes all three GCC-version tags to GHCR on
+changes to the `Dockerfile` (and on manual `workflow_dispatch`). Locally:
+`docker build --build-arg BASE_TAG=gcc-v13.4 -t amiga-build-container .`
