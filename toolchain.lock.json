@@ -1,0 +1,180 @@
+{
+  "version": 1,
+  "note": "Every source the image is built from. Nothing in the Docker build follows a branch head: fetch-sources.py materialises exactly these commits and checksums, and the build then runs offline. 'ref' is the branch update-lock.py follows when moving a pin; 'pin' is what is built. Refresh with scripts/update-lock.py (add --files for the file rows), review the diff, commit.",
+  "git": [
+    {
+      "name": "m68k-amigaos-gcc",
+      "url": "https://github.com/AmigaPorts/m68k-amigaos-gcc",
+      "ref": "master",
+      "pin": "753f6d44d52bb1a1a64f9dbcaaff7771496c8452",
+      "dest": "amiga-gcc",
+      "note": "the orchestrator: its Makefile builds every module below"
+    },
+    {
+      "name": "gcc",
+      "url": "https://github.com/AmigaPorts/gcc",
+      "ref": "amiga16.2",
+      "pin": "30ba5b21fc1974f93272fa260ef4a14a02c8538a",
+      "dest": "amiga-gcc/projects/gcc",
+      "marker": "configure",
+      "patched": true
+    },
+    {
+      "name": "binutils",
+      "url": "https://github.com/AmigaPorts/binutils-gdb",
+      "ref": "amiga-2.46",
+      "pin": "d753f498d779fde6d88905a5143f7b9dc25a420a",
+      "dest": "amiga-gcc/projects/binutils",
+      "marker": "configure",
+      "patched": true
+    },
+    {
+      "name": "newlib-cygwin",
+      "url": "https://github.com/AmigaPorts/newlib-cygwin",
+      "ref": "amiga",
+      "pin": "c1a63f1d1c3080288768dc6811494c8cdbaf02bd",
+      "dest": "amiga-gcc/projects/newlib-cygwin",
+      "marker": "newlib/configure"
+    },
+    {
+      "name": "libnix",
+      "url": "https://github.com/AmigaPorts/libnix",
+      "ref": "master",
+      "pin": "5150c1c39101ca71aaff969c3974430392867415",
+      "dest": "amiga-gcc/projects/libnix",
+      "marker": "Makefile.gcc6"
+    },
+    {
+      "name": "clib2",
+      "url": "https://github.com/AmigaPorts/clib2",
+      "ref": "master",
+      "pin": "842c0c66e6338e133b8ca1d57f85c8a7b346b115",
+      "dest": "amiga-gcc/projects/clib2",
+      "marker": "LICENSE"
+    },
+    {
+      "name": "libdebug",
+      "url": "https://github.com/AmigaPorts/libdebug",
+      "ref": "master",
+      "pin": "42d9d3a7a0d26fa4679384ffc78cf79fbce394d8",
+      "dest": "amiga-gcc/projects/libdebug",
+      "marker": "configure"
+    },
+    {
+      "name": "sfdc",
+      "url": "https://github.com/AmigaPorts/sfdc",
+      "ref": "master",
+      "pin": "2450b28354e1547dc77eb6b7137de0368db72759",
+      "dest": "amiga-gcc/projects/sfdc",
+      "marker": "configure"
+    },
+    {
+      "name": "fd2sfd",
+      "url": "https://github.com/AmigaPorts/fd2sfd",
+      "ref": "master",
+      "pin": "189ac23b5b2d0d0555381404d75e0508c2e95920",
+      "dest": "amiga-gcc/projects/fd2sfd",
+      "marker": "configure",
+      "patched": true
+    },
+    {
+      "name": "fd2pragma",
+      "url": "https://github.com/AmigaPorts/fd2pragma",
+      "ref": "master",
+      "pin": "bcffac5c89295baf1db033addc984312b4b4a722",
+      "dest": "amiga-gcc/projects/fd2pragma",
+      "marker": "makefile"
+    },
+    {
+      "name": "vasm",
+      "url": "https://github.com/AmigaPorts/vasm",
+      "ref": "master",
+      "pin": "71539c0cee85d5c1a45a7adf63debc7b5dd59615",
+      "dest": "amiga-gcc/projects/vasm",
+      "marker": "Makefile"
+    },
+    {
+      "name": "ira",
+      "url": "https://github.com/AmigaPorts/ira",
+      "ref": "master",
+      "pin": "bb7c11384a32c409341fdb0d16d715b7959a0290",
+      "dest": "amiga-gcc/projects/ira",
+      "marker": "Makefile"
+    },
+    {
+      "name": "aros-stuff",
+      "url": "https://github.com/AmigaPorts/aros-stuff",
+      "ref": "master",
+      "pin": "86711c70569ffc6b70ee1fb99895866c1d9f30e4",
+      "dest": "amiga-gcc/projects/aros-stuff",
+      "marker": "pthreads/Makefile"
+    },
+    {
+      "name": "amiga-netinclude",
+      "url": "https://github.com/AmigaPorts/amiga-netinclude",
+      "ref": "main",
+      "pin": "7d155ca3a3090afe3466f819dd178f2af6f5c176",
+      "dest": "amiga-gcc/projects/amiga-netinclude",
+      "marker": "README.md"
+    },
+    {
+      "name": "lha",
+      "url": "https://github.com/AmigaPorts/lha",
+      "ref": "master",
+      "pin": "08486d2da2ca77a6adf83194fd67400c8d86e7c7",
+      "dest": "lha",
+      "note": "host tool, built by build-toolchain.sh before make (also satisfies the Makefile's own lha rule)"
+    },
+    {
+      "name": "flexcat",
+      "url": "https://github.com/AmigaPorts/flexcat",
+      "ref": "master",
+      "pin": "a11d110c310412f741855524aadc25bec58b666d",
+      "dest": "flexcat",
+      "note": "host tool, built by build-toolchain.sh"
+    },
+    {
+      "name": "aros",
+      "url": "https://github.com/aros-development-team/AROS",
+      "ref": "master",
+      "pin": "992cf7007decc06b492f118f869d3feec221cfaa",
+      "note": "never fetched; only anchors the @aros@ placeholder in the file URLs below"
+    }
+  ],
+  "files": [
+    {
+      "name": "NDK3.2.lha",
+      "url": "https://aminet.net/dev/misc/NDK3.2.lha",
+      "sha256": "96cabd4ad683dced632e147bf86dee0f50dcb1254386216c25c362916a6409bb",
+      "dest": "amiga-gcc/download/NDK3.2.lha",
+      "note": "unpacked by the Makefile's ndk rule; its own NDK_SHA256 is cross-checked against this row"
+    },
+    {
+      "name": "m68k-amigaos-ahidev.lha",
+      "url": "https://aminet.net/driver/audio/m68k-amigaos-ahidev.lha",
+      "sha256": "de3571879210ad9ca179fbbc7a8c0591dfd0b673d6785657d8796fc1d7a147ec",
+      "dest": "amiga-gcc/download/m68k-amigaos-ahidev.lha",
+      "note": "AHI developer kit for `make sdk=ahi`"
+    },
+    {
+      "name": "sana2.h",
+      "url": "https://raw.githubusercontent.com/aros-development-team/AROS/@aros@/compiler/include/devices/sana2.h",
+      "sha256": "519e40912c11084e85d5e2ea999cadc304665b92d2e9d85caf543e3caa07e3a1",
+      "dest": "extra/devices/sana2.h",
+      "note": "AROS SANA-II header: in neither the NDK nor the Roadshow netinclude"
+    },
+    {
+      "name": "sana2specialstats.h",
+      "url": "https://raw.githubusercontent.com/aros-development-team/AROS/@aros@/compiler/include/devices/sana2specialstats.h",
+      "sha256": "bfca3166feb0e40ed8bf821be7a75f5e1636ea5beadca131e5dcbc0f8ea15c71",
+      "dest": "extra/devices/sana2specialstats.h"
+    },
+    {
+      "name": "MUI-5.0-20210831-os3.lha",
+      "url": "https://github.com/amiga-mui/muidev/releases/download/MUI-5.0-20210831/MUI-5.0-20210831-os3.lha",
+      "sha256": "8a869a037db465828dbe42fa7854114121280ed2691afa61fe53a25bf427a847",
+      "dest": "download/MUI-5.0-20210831-os3.lha",
+      "note": "extracted into /opt/mui-sdk by the final stage"
+    }
+  ]
+}

@@ -1,66 +1,64 @@
-# Shared Amiga (m68k-amigaos) build image for the driver stacks.
+# syntax=docker/dockerfile:1
+# Shared Amiga (m68k-amigaos) build image for the driver stacks (emu68-driver-stack,
+# poseidon-backport). Everything is built here from the pinned sources listed in
+# toolchain.lock.json; no prebuilt toolchain image is consumed.
 #
-# Base: stefanreinauer/amiga-gcc (PUBLIC, Docker Hub). Provides Bebbo's
-# m68k-amigaos gcc at /opt/amiga, NDK 3.2 (from Aminet NDK3.2.lha) with
-# libraries/keymap.h, AROS-open <devices/sana2.h> in m68k-amigaos/ndk-include,
-# plus lha / python3 / sfdc / fd2sfd.
+#   toolchain  ubuntu + build deps; fetch pinned sources (networked); build into /opt/amiga (offline)
+#   final      ubuntu + runtime deps; /opt/amiga copied in; MUI 5 SDK; env
+#   test       final + tests/smoke-test.sh, run as an unprivileged uid (CI builds this target first)
 #
-# BASE_TAG selects which upstream gcc build to pin (see
-# https://hub.docker.com/r/stefanreinauer/amiga-gcc/tags). Default is gcc-v6.5.0b
-# (Bebbo's classic port); CI also builds gcc-v13.4, gcc-v15.2 and gcc-v16.1 variants
-# of this same image, see .github/workflows/docker-image.yml.
-ARG BASE_TAG=gcc-v6.5.0b
-FROM stefanreinauer/amiga-gcc:${BASE_TAG}
+# Both stages share one base. Overridable for a trial build against another release:
+# docker build --build-arg UBUNTU=ubuntu:28.04 ...
+ARG UBUNTU=ubuntu:26.04
 
-# This layer adds the few things the stacks need on top of that base:
-#   1. cmake            (the base ships none)
-#   2. flexcat          (built from adtools/flexcat)
-#   3. MUI 5.0 SDK      (official amiga-mui/muidev os3 release, COMPLETE archive)
-#   4. env hints        (MUI_INCLUDE_DIR / SANA2_INCLUDE_DIR for cmake configure)
-#
-# Consumers: poseidon-backport uses all of it; emu68-driver-stack uses only the
-# cmake + NDK 3.2 toolchain (it ignores the MUI/flexcat layers).
-
-ARG FLEXCAT_VERSION=2.18
-ARG MUI_RELEASE=MUI-5.0-20210831
-ARG MUI_LHA=MUI-5.0-20210831-os3.lha
-
-# 0. Toolchain-path compatibility alias. The reinauer base puts the toolchain at
-#    /opt/amiga; amigadev/crosstools (and consumers written against it — e.g.
-#    emu68-driver-stack, whose toolchain.cmake defaults TOOLCHAIN_PATH=/opt/m68k-amigaos)
-#    expect /opt/m68k-amigaos. This symlink makes the image a drop-in for both layouts.
-RUN ln -s /opt/amiga /opt/m68k-amigaos
-
-# 1. cmake + xxd
+# ---------------------------------------------------------------------------------------------
+# Sources: the only networked step, and the only one that reads the lock. Kept as its own stage
+# so it can be built and inspected on its own (docker build --target sources), which is also how
+# a change to the fetch logic is diffed against the previous one. Cache key: lock + fetch script.
+FROM ${UBUNTU} AS sources
+ENV DEBIAN_FRONTEND=noninteractive LC_ALL=C.UTF-8
 RUN apt-get update \
- && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends cmake xxd \
+ && apt-get install -y --no-install-recommends \
+      autoconf automake bison build-essential ca-certificates curl file flex gettext git \
+      libgmp-dev libmpfr-dev libmpc-dev make patch perl python3 rsync wget xz-utils \
  && rm -rf /var/lib/apt/lists/*
 
-# 1a. NDK header fix: inline/bsdsocket.h (Roadshow TCP/IP's hand-written asm
-#    stubs) hits a GCC 9+ hard error -- a register-pinned input operand also
-#    listed in that same asm statement's clobber list -- that GCC 6.5 (this
-#    image's default base) tolerated. Harmless on every GCC version (removes
-#    a redundant clobber entry, doesn't change codegen); see the script for
-#    the full explanation. Only inline/bsdsocket.h is affected; usergroup.h
-#    was checked and is clean.
-COPY patches/fix-ndk-asm-clobbers.py /tmp/fix-ndk-asm-clobbers.py
-RUN python3 /tmp/fix-ndk-asm-clobbers.py /opt/amiga/m68k-amigaos/ndk-include/inline/bsdsocket.h \
- && rm /tmp/fix-ndk-asm-clobbers.py
+COPY toolchain.lock.json scripts/lock.py scripts/fetch-sources.py /src/
+RUN /src/fetch-sources.py
 
-# 2. flexcat -- host (unix) build. The Makefile has a bootstrap cycle: it tries to
-#    run flexcat to regenerate its own committed cat-source files. Touch them so they
-#    look up-to-date, breaking the cycle. Install the resulting native binary on PATH.
-RUN git clone --depth 1 --branch ${FLEXCAT_VERSION} https://github.com/adtools/flexcat.git /tmp/flexcat \
- && cd /tmp/flexcat/src \
- && touch locale.c locale_other.c FlexCat_cat.h FlexCat_cat_other.h \
- && cd /tmp/flexcat \
- && make OS=unix DEBUG= \
- && install -m755 src/bin_unix/flexcat /usr/local/bin/flexcat \
- && flexcat 2>/dev/null | head -1 \
- && rm -rf /tmp/flexcat
+# ---------------------------------------------------------------------------------------------
+FROM sources AS toolchain
+# Build, offline. A change to the build recipe re-runs this without refetching. The build
+# tree is removed inside this RUN so no intermediate layer ever carries it.
+COPY scripts/build-toolchain.sh /src/
+RUN --network=none /src/build-toolchain.sh
 
-# 3. Official MUI 5.0 dev SDK. The COMPLETE archive is extracted unmodified.
-ADD https://github.com/amiga-mui/muidev/releases/download/${MUI_RELEASE}/${MUI_LHA} /tmp/mui.lha
+# Verify, strip and trim. Its script is copied only now, so editing it never invalidates
+# the toolchain layer above.
+COPY scripts/finish-toolchain.sh /src/
+RUN --network=none /src/finish-toolchain.sh
+
+# ---------------------------------------------------------------------------------------------
+FROM ${UBUNTU} AS final
+ENV DEBIAN_FRONTEND=noninteractive
+# Runtime: cmake, make, xxd (bin2h), git (configure-time version strings), python3 and the shared
+# libraries cc1/lto1 link against. sfdc is Perl; perl-base is part of the base image.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+      ca-certificates cmake git make python3 xxd libgmp10 libmpfr6 libmpc3 \
+ && rm -rf /var/lib/apt/lists/*
+
+COPY --from=toolchain /opt/amiga /opt/amiga
+# Consumers written against amigadev/crosstools (emu68's toolchain.cmake defaults
+# TOOLCHAIN_PATH=/opt/m68k-amigaos) and against this image's /opt/amiga both work.
+RUN ln -s /opt/amiga /opt/m68k-amigaos
+ENV PATH=/opt/amiga/bin:/usr/local/bin:${PATH}
+ENV MUI_INCLUDE_DIR=/opt/mui-sdk/SDK/MUI/C/include
+ENV SANA2_INCLUDE_DIR=/opt/amiga/m68k-amigaos/ndk-include
+
+# Official MUI 5.0 developer SDK (amiga-mui/muidev), the COMPLETE archive extracted unmodified.
+# Its explicit-base inline headers are what poseidon builds against (MUI_INCLUDE_DIR).
+COPY --from=toolchain /src/download/MUI-5.0-20210831-os3.lha /tmp/mui.lha
 RUN mkdir -p /opt/mui-sdk \
  && cd /opt/mui-sdk \
  && lha xq /tmp/mui.lha \
@@ -68,7 +66,16 @@ RUN mkdir -p /opt/mui-sdk \
  && test -f /opt/mui-sdk/SDK/MUI/C/include/defines/muimaster.h \
  && test -f /opt/mui-sdk/SDK/MUI/C/include/inline/muimaster.h
 
-# 4. Configure hints. SANA-II headers live in the NDK 3.2 ndk-include tree the base ships.
-ENV MUI_INCLUDE_DIR=/opt/mui-sdk/SDK/MUI/C/include
-ENV SANA2_INCLUDE_DIR=/opt/amiga/m68k-amigaos/ndk-include
-ENV PATH=/opt/amiga/bin:/usr/local/bin:${PATH}
+# Provenance travels with the image: the lock that built it, and the resolved manifest
+# (/opt/amiga/etc/SOURCES, written by the toolchain stage).
+COPY toolchain.lock.json /opt/amiga/etc/toolchain.lock.json
+
+LABEL org.opencontainers.image.source="https://github.com/rondoval/amiga-build-container" \
+      org.opencontainers.image.description="m68k-amigaos GCC cross toolchain (AmigaPorts amiga16.2) + NDK 3.2 + MUI 5 SDK + cmake, built from pinned sources"
+
+# ---------------------------------------------------------------------------------------------
+FROM final AS test
+COPY tests/ /tests/
+USER 1000:1000
+ENV HOME=/tmp LC_ALL=C
+RUN /tests/smoke-test.sh
