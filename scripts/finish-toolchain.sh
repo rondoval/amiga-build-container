@@ -23,7 +23,11 @@ grep -q '^#include <proto/cardres.h>' "$inc/inline/cardres.h" \
 grep -q '^/\* Automatically generated header (sfdc' "$inc/inline/bsdsocket.h" \
 	|| { echo "inline/bsdsocket.h is not the sfdc-generated header" >&2; exit 1; }
 
-# Paths the consumer stacks rely on (toolchain.cmake and their CMake lists).
+# Paths the consumer stacks rely on (toolchain.cmake and their CMake lists).  The LTO rows
+# are load-bearing: the stacks build with -flto, and a binutils configured --disable-plugins
+# (as older orchestrator pins did) still produces a working toolchain that fails only once a
+# consumer puts an LTO object into a .a.  Assert the pieces here so that regression is caught
+# in this build rather than in theirs.
 missing=0
 for f in \
 	bin/m68k-amigaos-gcc bin/m68k-amigaos-g++ bin/m68k-amigaos-ld bin/m68k-amigaos-objdump bin/m68k-amigaos-strip \
@@ -38,13 +42,24 @@ for f in \
 	m68k-amigaos/ndk-include/devices/newstyle.h m68k-amigaos/ndk/lib/sfd/exec_lib.sfd \
 	m68k-amigaos/ndk/lib/sfd/bsdsocket_lib.sfd \
 	m68k-amigaos/include/devices/ahi.h m68k-amigaos/include/libraries/ahi_sub.h m68k-amigaos/include/proto/ahi.h \
-	lib/gcc/m68k-amigaos/$actual_version/libgcc.a etc/SOURCES
+	lib/gcc/m68k-amigaos/$actual_version/libgcc.a etc/SOURCES \
+	bin/m68k-amigaos-gcc-ar bin/m68k-amigaos-gcc-ranlib bin/m68k-amigaos-gcc-nm \
+	libexec/gcc/m68k-amigaos/$actual_version/lto1 \
+	libexec/gcc/m68k-amigaos/$actual_version/lto-wrapper \
+	libexec/gcc/m68k-amigaos/$actual_version/liblto_plugin.so
 do
 	[ -e "$PREFIX/$f" ] || { echo "missing: $PREFIX/$f" >&2; missing=1; }
 done
 [ "$missing" = 0 ]
 multilibs=$("$PREFIX/bin/m68k-amigaos-gcc" -print-multi-lib | wc -l)
 [ "$multilibs" -ge 10 ] || { echo "only $multilibs multilibs configured" >&2; exit 1; }
+
+# gcc installs the plugin under libexec/, where only the gcc-* wrappers look for it.  The
+# symlink is the conventional location bare binutils probe, so ar/nm/ranlib/objdump can read
+# LTO objects instead of reporting "plugin needed to handle lto object".
+mkdir -p "$PREFIX/lib/bfd-plugins"
+ln -sf "../../libexec/gcc/m68k-amigaos/$actual_version/liblto_plugin.so" \
+	"$PREFIX/lib/bfd-plugins/liblto_plugin.so"
 
 # ---- trim ---------------------------------------------------------------------------------
 # Strip host executables only (never the m68k target archives under lib/ and lib/gcc/).

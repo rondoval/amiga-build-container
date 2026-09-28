@@ -153,6 +153,51 @@ build_device() {
 }
 check "freestanding link with -lc -lamiga -ldebug -lgcc" build_device
 
+# ---- LTO --------------------------------------------------------------------------------------
+# The consumer stacks build with -flto, which needs binutils configured WITH plugin support. A gcc
+# whose binutils was built --disable-plugins still links loose LTO objects (collect2 falls back to
+# lto-wrapper) and fails only once an LTO object sits inside a .a -- i.e. every CMake static
+# library. So the archive is what gets checked here, with CMake's exact ar/ranlib sequence, and the
+# assertion is that the cross-TU call was constant-folded, not merely resolved: 20 + 22 collapses to
+# a single moveq #42 iff the plugin really handed the IR to GCC.
+cat > lto_lib.c <<'EOF'
+int lto_answer(void);
+int lto_answer(void) { return 20; }
+EOF
+cat > lto_main.c <<'EOF'
+int lto_answer(void);
+int doNotExecute(void);
+/* __attribute__((used)) is load-bearing, exactly as in the stacks' device.c: -Wl,-e is NOT an
+ * LTO root, so without it the plugin discards the whole module and the link still "succeeds",
+ * emitting a 20-byte HUNK header with no hunks. */
+int __attribute__((used)) doNotExecute(void) { return lto_answer() + 22; }
+EOF
+LTO_CFLAGS="-O2 -m68040 -mhard-float -fomit-frame-pointer -mcrt=nix20 -ffreestanding -flto"
+build_lto() {
+	"$CC" $LTO_CFLAGS -c lto_lib.c -o lto_lib.o || return 1
+	"$CC" $LTO_CFLAGS -c lto_main.c -o lto_main.o || return 1
+	m68k-amigaos-ar qc libltotest.a lto_lib.o || return 1   # what CMake's archive rule runs
+	m68k-amigaos-ranlib libltotest.a || return 1
+	"$CC" $LTO_CFLAGS -nostdlib -nostartfiles -s -Wl,-e,_doNotExecute \
+		lto_main.o -L. -lltotest -o lto.device || return 1
+	hunk_magic lto.device || { echo "linked, but the result is not a HUNK executable"; return 1; }
+	# hunk_magic alone is not enough: a module the plugin dropped entirely is still a valid
+	# (empty) HUNK header, so require real code.  20 + 22 folds to one moveq #42 iff the IR
+	# actually reached GCC; an un-inlined build shows jsr + moveq #22 + moveq #20 instead.
+	if ! m68k-amigaos-objdump -d --no-show-raw-insn lto.device 2>&1 | grep -q '#42'; then
+		echo "linked, but the cross-TU call was not constant-folded -- LTO did not happen:"
+		m68k-amigaos-objdump -dh lto.device 2>&1
+		return 1
+	fi
+}
+check "LTO through a static archive, cross-TU call constant-folded" build_lto
+check "ld has real plugin support (not --disable-plugins)" bash -c \
+	"m68k-amigaos-ld --help | grep -q -- '-plugin PLUGIN' && ! m68k-amigaos-ld --help | grep -q 'plugin.*(ignored)'"
+check "ar accepts --plugin" bash -c "m68k-amigaos-ar --help | grep -q -- '--plugin'"
+check "gcc-ar archives an LTO object" m68k-amigaos-gcc-ar rc libgccar.a lto_lib.o
+check "bare nm reads LTO objects (lib/bfd-plugins symlink)" bash -c \
+	"m68k-amigaos-nm lto_lib.o | grep -q lto_answer"
+
 # ---- headers the stacks include ----------------------------------------------------------------
 cat > headers.c <<'EOF'
 #include <exec/types.h>
