@@ -19,8 +19,8 @@ FROM ${UBUNTU} AS sources
 ENV DEBIAN_FRONTEND=noninteractive LC_ALL=C.UTF-8
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
-      autoconf automake bison build-essential ca-certificates curl file flex gettext git \
-      libgmp-dev libmpfr-dev libmpc-dev make patch perl python3 rsync wget xz-utils \
+      autoconf automake bison build-essential bzip2 ca-certificates curl file flex gettext git \
+      make patch perl python3 rsync wget xz-utils \
  && rm -rf /var/lib/apt/lists/*
 
 COPY toolchain.lock.json scripts/lock.py scripts/fetch-sources.py /src/
@@ -41,11 +41,13 @@ RUN --network=none /src/finish-toolchain.sh
 # ---------------------------------------------------------------------------------------------
 FROM ${UBUNTU} AS final
 ENV DEBIAN_FRONTEND=noninteractive
-# Runtime: cmake, make, xxd (bin2h), git (configure-time version strings), python3 and the shared
-# libraries cc1/lto1 link against. sfdc is Perl; perl-base is part of the base image.
+# Runtime: cmake, make, xxd (bin2h), git (configure-time version strings), python3. No gmp, mpfr
+# or mpc: they are built in-tree, so nothing under bin/ or libexec/ links them dynamically (the
+# smoke test's missing-shared-library scan is what keeps that true). sfdc is Perl; perl-base is
+# part of the base image.
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
-      ca-certificates cmake git make python3 xxd libgmp10 libmpfr6 libmpc3 \
+      ca-certificates cmake git make python3 xxd \
  && rm -rf /var/lib/apt/lists/*
 
 COPY --from=toolchain /opt/amiga /opt/amiga

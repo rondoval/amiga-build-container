@@ -7,7 +7,8 @@ A shared **m68k-amigaos cross-build image** for the Amiga driver/stack projects
 The toolchain is **built from source here**, from the commits pinned in
 [`toolchain.lock.json`](toolchain.lock.json). The sources are the actively maintained AmigaPorts
 continuation of Bebbo's amiga-gcc, and every input (17 git modules, the NDK archive, the AHI
-developer kit, the AROS SANA-II headers, the MUI SDK) is pinned by commit or sha256.
+developer kit, the AROS SANA-II headers, the MUI SDK, gcc's gmp/mpfr/mpc prerequisites) is
+pinned by commit or sha256.
 
 ## Tags
 
@@ -24,9 +25,10 @@ Toolchain at `/opt/amiga` (also reachable as `/opt/m68k-amigaos`, on `PATH`):
 
 * **gcc 16.2.0b** (C, C++, ObjC; 10 multilibs: 68000/020/060 × baserel variants × 68881),
   **binutils 2.46** with HUNK support, **libnix** (`-mcrt=nix20` / `-noixemul`, `nix13`), **clib2**,
-  **newlib** headers, **libdebug**, **libpthread**, **libamiga**.
+  **newlib** headers, **libdebug**, **libpthread**, **libamiga**. gmp, mpfr and mpc are built
+  in-tree, so neither compiler depends on the host distribution's copies.
 * **NDK 3.2 R4** (Aminet `NDK3.2.lha`, sha256-pinned) integrated as `m68k-amigaos/ndk-include`:
-  `proto/`, `inline/`, `lvo/` generated with **sfdc 1.12**; the Roadshow TCP/IP `netinclude`
+  `proto/`, `inline/`, `lvo/` generated with **sfdc 1.13**; the Roadshow TCP/IP `netinclude`
   (`sys/socket.h`, `proto/bsdsocket.h`, …) from `AmigaPorts/amiga-netinclude`, with its
   `inline/bsdsocket.h` generated here from the NDK's own SFD (see below); AROS' open
   `devices/sana2.h` + `sana2specialstats.h` (pinned AROS commit).
@@ -49,7 +51,7 @@ pinned NDK archive as every other header.
    the SFD's `==libname` (`card.resource` → `card`), the NDK names its files after the SFD
    (`cardres_lib.sfd` → `cardres.*`), and `cardres` is the one NDK 3.2 SFD where the two
    disagree. sfdc's `proto/cardres.h` has therefore always included a `clib/card_protos.h` that
-   does not exist; sfdc 1.12's `inline/cardres.h` additionally includes `proto/card.h`. The
+   does not exist; sfdc 1.13's `inline/cardres.h` additionally includes `proto/card.h`. The
    orchestrator's NDK rule even copies the NDK's own `proto/cardres.h` explicitly, then its
    sfdc proto rule overwrites it. The image ships the NDK's own proto header and an inline
    header generated with sfdc's `--protoname=cardres`, the option that exists for exactly this
@@ -57,7 +59,7 @@ pinned NDK archive as every other header.
 2. **`inline/bsdsocket.h`** — `AmigaPorts/amiga-netinclude` carries Roadshow's 2017
    fd2pragma-generated inline header rewritten by hand into asm stubs: they repeat register-pinned
    input operands in their clobber lists (a hard error since GCC 9) and marshal varargs through
-   the `_sfdc_vararg` type that sfdc 1.12 only defines in the headers that need it. The NDK
+   the `_sfdc_vararg` type that sfdc 1.13 only defines in the headers that need it. The NDK
    archive ships Roadshow's own `bsdsocket_lib.sfd`; the image generates the inline header from
    it like every other inline header, and installs the SFD under `ndk/lib/sfd/`. The rest of
    amiga-netinclude (`sys/`, `netinet/`, `netdb.h`, `proto/bsdsocket.h`, …) is used as is.
@@ -86,9 +88,16 @@ scripts/update-lock.py gcc sfdc   # ...only these rows
 
 Each row carries everything about one input: where it is checked out or downloaded to (`dest`,
 relative to `/src`), which file's presence stops the orchestrator's Makefile from cloning the
-module itself (`marker`), and whether its clone rule also applies local patches (`patched`).
-`scripts/fetch-sources.py` is driven entirely by those fields, so adding or moving an input is
-a lock edit rather than a script edit. `@aros@` in a URL expands to that row's pin.
+module itself (`marker`), whether its clone rule also applies local patches (`patched`), and,
+for a file the Makefile pins as well, the variable it pins it with (`makefile_pin`: the NDK
+archive and the three gcc prerequisites). `scripts/fetch-sources.py` is driven entirely by those
+fields, so adding or moving an input is a lock edit rather than a script edit. `@aros@` in a URL
+expands to that row's pin.
+
+A `makefile_pin` mismatch fails the sources stage. It means upstream moved to another version of
+that archive: the Makefile's download rule names the file after the version it pins, so the
+pre-downloaded one no longer satisfies it and the offline build step would go looking for the
+network. Follow the new version in the row's `name`, `url`, `dest` and `sha256`.
 
 Review the diff, commit, push. CI rebuilds the toolchain stage,
 runs the in-image smoke test, builds `emu68-driver-stack` and `poseidon-backport` with the

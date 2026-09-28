@@ -61,12 +61,18 @@ class FileRow:
 
     url may contain an @<git row name>@ placeholder, replaced by that row's pin.
     dest is relative to /src.
+
+    makefile_pin  the variable the orchestrator's Makefile pins this same file with. Our row
+                  has to agree with it: the Makefile's download rule is satisfied by the
+                  pre-downloaded file only under the name that variable's version spells, so an
+                  upstream re-pin would send the offline build step looking for the network.
     """
 
     name: str
     url: str
     sha256: str
     dest: str
+    makefile_pin: str | None = None
     note: str | None = None
 
 

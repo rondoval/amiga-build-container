@@ -9,7 +9,8 @@ the lock; this script keeps no per-module tables of its own.
 Layout produced (the `dest` of each row, relative to /src):
   /src/amiga-gcc/                 orchestrator (AmigaPorts/m68k-amigaos-gcc) at its pin
   /src/amiga-gcc/projects/<mod>/  every module at its pin (so `make` never clones)
-  /src/amiga-gcc/download/        NDK3.2.lha, m68k-amigaos-ahidev.lha (so `make` never downloads)
+  /src/amiga-gcc/download/        NDK3.2.lha, the AHI kit, the gmp/mpfr/mpc tarballs gcc and
+                                  binutils are built with (so `make` never downloads)
   /src/lha, /src/flexcat          host tools, built by build-toolchain.sh
   /src/download/<MUI .lha>        extracted in the final stage
   /src/extra/devices/*.h          AROS SANA-II headers, installed by build-toolchain.sh
@@ -72,14 +73,28 @@ def check_markers(lock: Lock) -> None:
             )
 
 
-def check_ndk_pin(lock: Lock, orch: Path) -> None:
-    """The Makefile pins the NDK archive too; if upstream re-pins it, our lock must follow."""
-    found = re.search(r"^NDK_SHA256\s*:=\s*(\S+)", (orch / "Makefile").read_text(), re.M)
-    if not found:
-        raise LockError("the orchestrator Makefile no longer has an NDK_SHA256 line")
-    want = lock.file_row("NDK3.2.lha").sha256
-    if found.group(1) != want:
-        raise LockError(f"Makefile NDK_SHA256 ({found.group(1)}) != lock NDK3.2.lha ({want})")
+def check_makefile_pins(lock: Lock, orch: Path) -> None:
+    """The Makefile pins some of these archives too; if upstream re-pins one, our lock must follow.
+
+    Its download rules are satisfied by a file already sitting in download/ under the name the
+    pinned version spells, which is what lets the build step run offline. A new NDK or a newer
+    gmp would rename that file, so the build would reach for the network and fail deep into the
+    toolchain instead; fail here, where the fix is one lock row.
+    """
+    makefile = (orch / "Makefile").read_text()
+    for row in lock.files:
+        if not row.makefile_pin:
+            continue
+        # [ \t]* and not \s*: an empty assignment must not match across the line break and
+        # capture the next line's variable name (the Makefile has an empty NDK_SHA256 in its
+        # NDK 3.9 branch).
+        found = re.search(rf"^{re.escape(row.makefile_pin)}[ \t]*:=[ \t]*(\S+)", makefile, re.M)
+        if not found:
+            raise LockError(f"the orchestrator Makefile no longer sets {row.makefile_pin}")
+        if found.group(1) != row.sha256:
+            raise LockError(
+                f"Makefile {row.makefile_pin} ({found.group(1)}) != lock {row.name} ({row.sha256})"
+            )
 
 
 def pin_ahi_sdk(lock: Lock, orch: Path) -> None:
@@ -139,7 +154,7 @@ def main() -> int:
         fetch_verified(lock.expand_url(row.url), row.sha256, SRC / row.dest)
         provenance.append((row.name, row.sha256))
 
-    check_ndk_pin(lock, orch)
+    check_makefile_pins(lock, orch)
     pin_ahi_sdk(lock, orch)
     poison_repos(orch)
 

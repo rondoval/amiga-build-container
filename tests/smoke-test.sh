@@ -38,6 +38,24 @@ check "toolchain bin on PATH" test "$(command -v m68k-amigaos-gcc)" = "$CC"
 check "\$HOME is writable" touch "$HOME/.smoke-probe"
 check "-print-multi-lib lists >= 10 multilibs" test "$("$CC" -print-multi-lib | wc -l)" -ge 10
 
+# ---- multilib selection ---------------------------------------------------------------------
+# Which libgcc, libnix, libdebug and libpthread a stack links is decided by MULTILIB_MATCHES.
+# Before the amiga16.2 fix only -m68020 and -m68060 named a multilib built for them: -m68030,
+# -m68040, -m68020-40 and every -march= spelling fell through to the 68000 libraries, so the
+# -m68040 stacks linked 68000 code into every library call. The spellings checked here are the
+# ones the consumers offer (M68K_CPU), -m68040 being their default.
+multi_dir_is() {
+	local want=$1 got; shift
+	got=$("$CC" -print-multi-directory "$@") || return 1
+	[ "$got" = "$want" ] || { echo "-print-multi-directory $*: '$got', want '$want'"; return 1; }
+}
+check "-m68020 links the 020 multilib" multi_dir_is libm020 -m68020 -mhard-float
+check "-m68030 links the 020 multilib" multi_dir_is libm020 -m68030 -mhard-float
+check "-m68040 links the 020 multilib" multi_dir_is libm020 -m68040 -mhard-float
+check "-m68060 links the 060 multilib" multi_dir_is libm060 -m68060 -mhard-float
+check "-m68000 links the root multilib" multi_dir_is . -m68000 -msoft-float
+check "-m68040 -fbaserel links the baserel 020 multilib" multi_dir_is libb/libm020 -m68040 -fbaserel
+
 # ---- register-argument traps ----------------------------------------------------------------
 # The AmigaOS ABI passes arguments in named registers, via asm("a1") on the parameter. Two ways
 # m68k-amigaos-gcc 16.1.1b silently broke that, both fixed in the AmigaPorts amiga16.2 branch:
@@ -169,7 +187,7 @@ struct Library *SocketBase;
 struct ExecBase *SysBase;
 /* a "no return value" bsdsocket inline (the hand-written Roadshow header failed here on GCC >= 9) */
 void use_inline(struct List *l) { ReleaseInterfaceList(l); }
-/* a bsdsocket varargs wrapper (the hand-written header needed a typedef sfdc 1.12 stopped emitting) */
+/* a bsdsocket varargs wrapper (the hand-written header needed a typedef sfdc 1.13 stopped emitting) */
 LONG use_varargs(void) { return QueryInterfaceTags((STRPTR)"eth0", TAG_END); }
 struct NSDeviceQueryResult q = { 0, sizeof(struct NSDeviceQueryResult), NSDEVTYPE_SANA2, 0, NULL };
 EOF
