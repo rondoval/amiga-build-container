@@ -85,28 +85,31 @@ def check_makefile_pins(lock: Lock, orch: Path) -> None:
     for row in lock.files:
         if not row.makefile_pin:
             continue
+        # Every assignment, not the first: the Makefile sets NDK_SHA256 once per NDK it can
+        # build against (3.2 and 3.9), and which branch comes first is not ours to rely on.
         # [ \t]* and not \s*: an empty assignment must not match across the line break and
-        # capture the next line's variable name (the Makefile has an empty NDK_SHA256 in its
-        # NDK 3.9 branch).
-        found = re.search(rf"^{re.escape(row.makefile_pin)}[ \t]*:=[ \t]*(\S+)", makefile, re.M)
+        # capture the next line's variable name.
+        found = re.findall(rf"^{re.escape(row.makefile_pin)}[ \t]*:=[ \t]*(\S+)", makefile, re.M)
         if not found:
             raise LockError(f"the orchestrator Makefile no longer sets {row.makefile_pin}")
-        if found.group(1) != row.sha256:
+        if row.sha256 not in found:
             raise LockError(
-                f"Makefile {row.makefile_pin} ({found.group(1)}) != lock {row.name} ({row.sha256})"
+                f"Makefile {row.makefile_pin} ({', '.join(found)}) != lock {row.name} ({row.sha256})"
             )
 
 
-def pin_ahi_sdk(lock: Lock, orch: Path) -> None:
-    """Make `make sdk=ahi` verify the pre-downloaded archive rather than trust a bare URL.
+def check_ahi_sdk_pin(lock: Lock, orch: Path) -> None:
+    """The AHI kit's .sdk descriptor pins its archive as well; if upstream re-pins it, follow.
 
-    The SDK installer honours a Sha256: line in the .sdk file and reuses an already downloaded,
-    verified archive, which is what lets that target run offline.
+    `make sdk=ahi` hands that checksum to sdk/download, which leaves an archive that verifies
+    alone and otherwise discards it and reaches for the network the build step does not have.
     """
-    sdk = orch / "sdk" / "ahi.sdk"
-    text = sdk.read_text()
-    if not re.search(r"^Sha256:", text, re.M):
-        sdk.write_text(text + f"Sha256: {lock.file_row('m68k-amigaos-ahidev.lha').sha256}\n")
+    row = lock.file_row("m68k-amigaos-ahidev.lha")
+    found = re.search(r"^Sha256:[ \t]*(\S+)", (orch / "sdk" / "ahi.sdk").read_text(), re.M)
+    if not found:
+        raise LockError("sdk/ahi.sdk no longer carries a Sha256")
+    if found.group(1).lower() != row.sha256:
+        raise LockError(f"sdk/ahi.sdk Sha256 ({found.group(1)}) != lock {row.name} ({row.sha256})")
 
 
 def poison_repos(orch: Path) -> None:
@@ -155,7 +158,7 @@ def main() -> int:
         provenance.append((row.name, row.sha256))
 
     check_makefile_pins(lock, orch)
-    pin_ahi_sdk(lock, orch)
+    check_ahi_sdk_pin(lock, orch)
     poison_repos(orch)
 
     (SRC / "SOURCES").write_text("".join(f"{name} {value}\n" for name, value in provenance))

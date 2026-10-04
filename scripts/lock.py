@@ -25,7 +25,9 @@ HEX64 = re.compile(r"\A[0-9a-f]{64}\Z")
 PLACEHOLDER = re.compile(r"@([A-Za-z0-9_.-]+)@")
 
 AMINET = re.compile(r"\Ahttps?://(www\.)?aminet\.net")
-AMINET_MIRROR = os.environ.get("AMINET_MIRROR", "http://nl.aminet.net")
+AMINET_MIRRORS = os.environ.get(
+    "AMINET_MIRROR", "http://us4.aminet.net/aminet http://de4.aminet.net"
+).split()
 
 
 class LockError(Exception):
@@ -240,11 +242,12 @@ def curl(url: str, dest: Path) -> bool:
 def mirrors(url: str) -> list[str]:
     """Candidate URLs to try, best first.
 
-    aminet.net redirects each download to a random mirror, some slow or broken; try a known
-    good one first (the orchestrator's CI pins the same one for the same reason).
+    aminet.net redirects each download to a random mirror, some slow or broken, and mirrors come
+    and go; try the ones the orchestrator's CI lists first, then aminet.net itself. AMINET_MIRROR
+    is a space-separated list of base URLs, each with the path prefix it serves the tree under.
     """
-    if AMINET_MIRROR and AMINET.match(url):
-        return [AMINET.sub(AMINET_MIRROR, url), url]
+    if AMINET.match(url):
+        return [AMINET.sub(mirror.rstrip("/"), url) for mirror in AMINET_MIRRORS] + [url]
     return [url]
 
 

@@ -6,7 +6,7 @@
       "name": "m68k-amigaos-gcc",
       "url": "https://github.com/AmigaPorts/m68k-amigaos-gcc",
       "ref": "master",
-      "pin": "35f2b50d9d78d48bf6882f9ed89567a970c20e3e",
+      "pin": "433b3f3839d3fcf79667d906bbca67a7a2b797b6",
       "dest": "amiga-gcc",
       "note": "the orchestrator: its Makefile builds every module below"
     },
@@ -14,7 +14,7 @@
       "name": "gcc",
       "url": "https://github.com/AmigaPorts/gcc",
       "ref": "amiga16.2",
-      "pin": "4b3f8a1cfbafe5d873270052a656cf414bc608d2",
+      "pin": "0d8ac1c0870baf66ae64956d19439c80c721c0c7",
       "dest": "amiga-gcc/projects/gcc",
       "marker": "configure",
       "patched": true
@@ -40,7 +40,7 @@
       "name": "libnix",
       "url": "https://github.com/AmigaPorts/libnix",
       "ref": "master",
-      "pin": "5d4e090a280d1fbd0b4afbb69b3212f29da029c8",
+      "pin": "0a1d18a0938dce3f7a234963bcb7fa6148f6a6f3",
       "dest": "amiga-gcc/projects/libnix",
       "marker": "Makefile.gcc6"
     },
@@ -137,7 +137,7 @@
       "name": "aros",
       "url": "https://github.com/aros-development-team/AROS",
       "ref": "master",
-      "pin": "72a773f2de8af8295f221dc02ee6fd8d48ae46e0",
+      "pin": "5da9fd5072899aba267f0639509601a78bfcfd32",
       "note": "never fetched; only anchors the @aros@ placeholder in the file URLs below"
     }
   ],
