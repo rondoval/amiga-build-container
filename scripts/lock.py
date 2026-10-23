@@ -68,6 +68,9 @@ class FileRow:
                   has to agree with it: the Makefile's download rule is satisfied by the
                   pre-downloaded file only under the name that variable's version spells, so an
                   upstream re-pin would send the offline build step looking for the network.
+    sdk           the orchestrator's sdk/<sdk>.sdk descriptor that installs this archive. The
+                  build step runs `make sdk=<sdk>` for it, and the descriptor's Sha256: line pins
+                  the same file, so the two must agree for the same reason as makefile_pin.
     """
 
     name: str
@@ -75,6 +78,7 @@ class FileRow:
     sha256: str
     dest: str
     makefile_pin: str | None = None
+    sdk: str | None = None
     note: str | None = None
 
 

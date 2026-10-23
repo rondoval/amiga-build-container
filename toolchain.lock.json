@@ -139,6 +139,25 @@
       "ref": "master",
       "pin": "5da9fd5072899aba267f0639509601a78bfcfd32",
       "note": "never fetched; only anchors the @aros@ placeholder in the file URLs below"
+    },
+    {
+      "name": "devicetree.resource",
+      "url": "https://github.com/michalsc/devicetree.resource",
+      "ref": "main",
+      "pin": "064095a749f72df8fa5165670a7ed16911a566c7",
+      "note": "never fetched, like aros: anchors the @<name>@ placeholders of the Emu68 resource rows below"
+    },
+    {
+      "name": "mailbox.resource",
+      "url": "https://github.com/michalsc/mailbox.resource",
+      "ref": "main",
+      "pin": "b6ed22dc7b46058d2a7454c34ce6dd27ab249449"
+    },
+    {
+      "name": "cma.resource",
+      "url": "https://github.com/michalsc/cma.resource",
+      "ref": "master",
+      "pin": "c5373f251f5f31b4543921ae94820b5b7313c8c0"
     }
   ],
   "files": [
@@ -177,7 +196,16 @@
       "url": "https://aminet.net/driver/audio/m68k-amigaos-ahidev.lha",
       "sha256": "de3571879210ad9ca179fbbc7a8c0591dfd0b673d6785657d8796fc1d7a147ec",
       "dest": "amiga-gcc/download/m68k-amigaos-ahidev.lha",
-      "note": "AHI developer kit for `make sdk=ahi`"
+      "sdk": "ahi",
+      "note": "AHI 6.0 developer kit"
+    },
+    {
+      "name": "P96Develop.lha",
+      "url": "https://aminet.net/dev/misc/P96Develop.lha",
+      "sha256": "53d3413653afc58a9b12e8c31b66a8fa096edf3c3de18937f4aa8effd98b4d2b",
+      "dest": "amiga-gcc/download/P96Develop.lha",
+      "sdk": "p96",
+      "note": "P96 3.6.1 application headers (CC-BY, iComp)"
     },
     {
       "name": "sana2.h",
@@ -191,6 +219,32 @@
       "url": "https://raw.githubusercontent.com/aros-development-team/AROS/@aros@/compiler/include/devices/sana2specialstats.h",
       "sha256": "bfca3166feb0e40ed8bf821be7a75f5e1636ea5beadca131e5dcbc0f8ea15c71",
       "dest": "extra/devices/sana2specialstats.h"
+    },
+    {
+      "name": "devicetree_lib.sfd",
+      "url": "https://raw.githubusercontent.com/michalsc/devicetree.resource/@devicetree.resource@/sfd/devicetree_lib.sfd",
+      "sha256": "6a6886fe016297bf4733ff38182e81ef2269a06491f42cc9069ebd8b22378dc4",
+      "dest": "extra/sfd/devicetree_lib.sfd",
+      "note": "Emu68 resources (MPL-2.0): build-toolchain.sh generates clib/proto/inline/lvo headers from every extra/sfd/*.sfd"
+    },
+    {
+      "name": "mailbox_lib.sfd",
+      "url": "https://raw.githubusercontent.com/michalsc/mailbox.resource/@mailbox.resource@/sfd/mailbox_lib.sfd",
+      "sha256": "fff002b27070044912bcbd4e0bdef52fcffe9a927d22896502e4091c5358ff9c",
+      "dest": "extra/sfd/mailbox_lib.sfd"
+    },
+    {
+      "name": "cma_lib.sfd",
+      "url": "https://raw.githubusercontent.com/michalsc/cma.resource/@cma.resource@/sfd/cma_lib.sfd",
+      "sha256": "de9c98cde1090f1e6a9afe7c7e2a9cd814ed90ca09abf10c5b6c5bf3482c0ef7",
+      "dest": "extra/sfd/cma_lib.sfd"
+    },
+    {
+      "name": "cma.h",
+      "url": "https://raw.githubusercontent.com/michalsc/cma.resource/@cma.resource@/include/resources/cma.h",
+      "sha256": "1943206db89b354bc60a45f89c9800bb022a47d8ba1a5206ad9860bb43162015",
+      "dest": "extra/include/resources/cma.h",
+      "note": "installed under m68k-amigaos/include/ with everything else in extra/include/"
     },
     {
       "name": "MUI-5.0-20210831-os3.lha",

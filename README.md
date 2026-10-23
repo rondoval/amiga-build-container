@@ -1,14 +1,14 @@
 # amiga-build-container
 
 A shared **m68k-amigaos cross-build image** for the Amiga driver/stack projects
-(`emu68-driver-stack`, `poseidon-backport`), published to
+(`emu68-driver-stack`, `neptune-usb-stack`), published to
 **`ghcr.io/rondoval/amiga-build-container`** and consumed by those repos' `scripts/docker-build.sh`.
 
 The toolchain is **built from source here**, from the commits pinned in
 [`toolchain.lock.json`](toolchain.lock.json). The sources are the actively maintained AmigaPorts
-continuation of Bebbo's amiga-gcc, and every input (17 git modules, the NDK archive, the AHI
-developer kit, the AROS SANA-II headers, the MUI SDK, gcc's gmp/mpfr/mpc prerequisites) is
-pinned by commit or sha256.
+continuation of Bebbo's amiga-gcc, and every input (16 git modules, the NDK archive, the AHI
+and P96 developer kits, the AROS SANA-II headers, the Emu68 resource SFDs, the MUI SDK, gcc's
+gmp/mpfr/mpc prerequisites) is pinned by commit or sha256.
 
 ## Tags
 
@@ -33,11 +33,24 @@ Toolchain at `/opt/amiga` (also reachable as `/opt/m68k-amigaos`, on `PATH`):
   `inline/bsdsocket.h` generated here from the NDK's own SFD (see below); AROS' open
   `devices/sana2.h` + `sana2specialstats.h` (pinned AROS commit).
 * **AHI 6.0 developer headers** (`devices/ahi.h`, `libraries/ahi_sub.h`, `proto/ahi.h`).
+* **P96 3.6.1 developer headers** (iComp's `P96Develop.lha`, installed by the orchestrator's
+  `sdk/p96.sdk`): the vendor's own `proto/Picasso96.h`, `clib/Picasso96_protos.h`,
+  `inline/Picasso96.h` and `libraries/Picasso96.h` (base `P96Base`), plus
+  `lib/sfd/Picasso96API_lib.sfd` and an auto-open stub in `libstubs.a`. `clib/Picasso96_protos.h`
+  uses `struct RastPort` without declaring it, so include `<proto/graphics.h>` first. The driver
+  kit (`boardinfo.h`, `sdk/p96card.sdk`) is not installed.
+* **Emu68 resource headers** for `devicetree.resource`, `mailbox.resource` and `cma.resource`
+  (Michal Schulz's repos; their SFDs and `resources/cma.h` at pinned commits): `clib/`, `proto/`,
+  `inline/` and `lvo/` generated here by sfdc with the same modes as the other SDK headers, the
+  SFDs installed under `lib/sfd/`. Include `<proto/devicetree.h>`, `<proto/mailbox.h>`,
+  `<resources/cma.h>` and `<proto/cma.h>`.
 * Host tools: `sfdc`, `fd2sfd`, `fd2pragma`, `vasm`, `ira`, `lha` (lha-ac, with the
   `--system-kanji-code`/`--archive-kanji-code` options), `flexcat`, plus `cmake` 4.2, `make`, `xxd`,
   `git`, `python3`, `perl`.
 * **MUI 5.0 SDK** (official `amiga-mui/muidev` os3 release, complete archive) at `/opt/mui-sdk`.
 
+The SDK headers (AHI, P96, Emu68 resources) live in `m68k-amigaos/include/`, on the compiler's
+default include path next to the NDK's, so consumers need no `-I` for them.
 Configure hints are baked in as env vars: `MUI_INCLUDE_DIR`, `SANA2_INCLUDE_DIR`.
 Provenance travels with the image: `/opt/amiga/etc/toolchain.lock.json` (the lock that built it) and
 `/opt/amiga/etc/SOURCES` (the resolved commits and archive checksums).
@@ -90,9 +103,17 @@ Each row carries everything about one input: where it is checked out or download
 relative to `/src`), which file's presence stops the orchestrator's Makefile from cloning the
 module itself (`marker`), whether its clone rule also applies local patches (`patched`), and,
 for a file the Makefile pins as well, the variable it pins it with (`makefile_pin`: the NDK
-archive and the three gcc prerequisites). `scripts/fetch-sources.py` is driven entirely by those
-fields, so adding or moving an input is a lock edit rather than a script edit. `@aros@` in a URL
-expands to that row's pin.
+archive and the three gcc prerequisites), and for an archive the orchestrator installs with
+`make sdk=<name>`, that descriptor's name (`sdk`: AHI, P96; the descriptor's `Url:` and `Sha256:`
+must agree with the row, and the build installs every SDK the lock names).
+`scripts/fetch-sources.py` is driven entirely by those fields, so adding or moving an input is a
+lock edit rather than a script edit.
+
+A git row without `dest` is never checked out: it only pins the commit that `@<name>@` in the
+URLs of loose files expands to (`aros` for the SANA-II headers; `devicetree.resource`,
+`mailbox.resource` and `cma.resource` for the Emu68 resource SFDs). Moving such a pin needs
+`--files` as well, to re-hash the files it serves. Another SFD-only interface is one such row
+plus a file row with `dest` under `extra/sfd/` (and `extra/include/` for a header of its own).
 
 A `makefile_pin` mismatch fails the sources stage. It means upstream moved to another version of
 that archive: the Makefile's download rule names the file after the version it pins, so the
@@ -100,7 +121,7 @@ pre-downloaded one no longer satisfies it and the offline build step would go lo
 network. Follow the new version in the row's `name`, `url`, `dest` and `sha256`.
 
 Review the diff, commit, push. CI rebuilds the toolchain stage,
-runs the in-image smoke test, builds `emu68-driver-stack` and `poseidon-backport` with the
+runs the in-image smoke test, builds `emu68-driver-stack` and `neptune-usb-stack` with the
 candidate, and only then moves `gcc-v16.2` + `latest`. Changes that leave the lock and
 `scripts/` untouched (tests, the final stage) reuse the toolchain stage from the registry
 build cache and take a few minutes.
@@ -121,7 +142,7 @@ Validate the consumers against the local image through their own wrappers (fresh
 
 ```sh
 EMU68_BUILD_IMAGE=amiga-build-container:dev    ./scripts/docker-build.sh   # in emu68-driver-stack
-POSEIDON_BUILD_IMAGE=amiga-build-container:dev ./scripts/docker-build.sh   # in poseidon-backport
+NEPTUNE_BUILD_IMAGE=amiga-build-container:dev  ./scripts/docker-build.sh   # in neptune-usb-stack
 ```
 
 ## Licensing
@@ -129,4 +150,7 @@ POSEIDON_BUILD_IMAGE=amiga-build-container:dev ./scripts/docker-build.sh   # in 
 All bundled software is freely distributable: the GCC toolchain and binutils (GPL), libnix,
 newlib and clib2 (their respective licenses, see the AmigaPorts repos), `lha` and `flexcat` (GPL),
 the NDK 3.2 headers (public Aminet archive), the AHI developer kit (Aminet), the AROS SANA-II
-headers (APL), and the **complete, unmodified** MUI 5.0 developer SDK.
+headers (APL), the P96 developer files (CC-BY 4.0, © iComp / Jens Schönfeld,
+<https://wiki.icomp.de/wiki/P96>), the devicetree.resource, mailbox.resource and cma.resource
+SFDs and `resources/cma.h` (Mozilla Public License 2.0, <https://mozilla.org/MPL/2.0/>; sources at
+<https://github.com/michalsc>), and the **complete, unmodified** MUI 5.0 developer SDK.

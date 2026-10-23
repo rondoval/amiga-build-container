@@ -5,8 +5,8 @@
 #            `final` target as ghcr.io/<owner>/amiga-build-container:sha-<git7> (the candidate).
 #            The toolchain stage is restored from the registry build cache unless
 #            toolchain.lock.json or scripts/ changed (then it is rebuilt: ~35 min on a hosted runner).
-#   smoke    builds emu68-driver-stack and poseidon-backport with the candidate, through their
-#            own scripts/docker-build.sh (poseidon's also runs its MUI 3.8 subset check).
+#   smoke    builds emu68-driver-stack and neptune-usb-stack with the candidate, through their
+#            own scripts/docker-build.sh (neptune's also runs its MUI 3.8 subset check).
 #   promote  re-tags the candidate as gcc-v16.2 and latest (manifest copy, no blob upload).
 #
 # Pull requests only run the build (no push, no smoke, no promote). Old gcc-v* tags are never
@@ -120,15 +120,15 @@ jobs:
             image_var: EMU68_BUILD_IMAGE
             args_var: EMU68_CONFIGURE_ARGS
             args: ""
-          - name: poseidon-backport 68020/soft
-            repo: rondoval/poseidon-backport
-            image_var: POSEIDON_BUILD_IMAGE
-            args_var: POSEIDON_CONFIGURE_ARGS
+          - name: neptune-usb-stack 68020/soft
+            repo: rondoval/neptune-usb-stack
+            image_var: NEPTUNE_BUILD_IMAGE
+            args_var: NEPTUNE_CONFIGURE_ARGS
             args: "-DM68K_CPU=68020 -DM68K_FPU=soft"
-          - name: poseidon-backport 68060/hard
-            repo: rondoval/poseidon-backport
-            image_var: POSEIDON_BUILD_IMAGE
-            args_var: POSEIDON_CONFIGURE_ARGS
+          - name: neptune-usb-stack 68060/hard
+            repo: rondoval/neptune-usb-stack
+            image_var: NEPTUNE_BUILD_IMAGE
+            args_var: NEPTUNE_CONFIGURE_ARGS
             args: "-DM68K_CPU=68060 -DM68K_FPU=hard"
     name: smoke (${{ matrix.name }})
     steps:
@@ -138,7 +138,7 @@ jobs:
           repository: ${{ matrix.repo }}
           submodules: recursive
 
-      # The wrappers own the docker invocation; only the image is overridden. poseidon's also
+      # The wrappers own the docker invocation; only the image is overridden. neptune's also
       # runs its post-build MUI 3.8 subset check (check-mui38.py).
       - name: Build with the candidate image
         env:

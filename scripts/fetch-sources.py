@@ -9,11 +9,16 @@ the lock; this script keeps no per-module tables of its own.
 Layout produced (the `dest` of each row, relative to /src):
   /src/amiga-gcc/                 orchestrator (AmigaPorts/m68k-amigaos-gcc) at its pin
   /src/amiga-gcc/projects/<mod>/  every module at its pin (so `make` never clones)
-  /src/amiga-gcc/download/        NDK3.2.lha, the AHI kit, the gmp/mpfr/mpc tarballs gcc and
-                                  binutils are built with (so `make` never downloads)
+  /src/amiga-gcc/download/        NDK3.2.lha, the SDK archives (AHI, P96), the gmp/mpfr/mpc
+                                  tarballs gcc and binutils are built with (so `make` never
+                                  downloads)
   /src/lha, /src/flexcat          host tools, built by build-toolchain.sh
   /src/download/<MUI .lha>        extracted in the final stage
   /src/extra/devices/*.h          AROS SANA-II headers, installed by build-toolchain.sh
+  /src/extra/sfd/*.sfd            SFD-only interfaces (the Emu68 resources); build-toolchain.sh
+                                  generates their headers
+  /src/extra/include/             headers installed as they are under m68k-amigaos/include/
+  /src/SDKS                       the orchestrator SDKs to install, one per line (rows with `sdk`)
   /src/SOURCES                    "<name> <commit-or-sha256>" provenance, shipped as etc/SOURCES
 """
 
@@ -98,18 +103,27 @@ def check_makefile_pins(lock: Lock, orch: Path) -> None:
             )
 
 
-def check_ahi_sdk_pin(lock: Lock, orch: Path) -> None:
-    """The AHI kit's .sdk descriptor pins its archive as well; if upstream re-pins it, follow.
+def check_sdk_pins(lock: Lock, orch: Path) -> None:
+    """Each SDK's .sdk descriptor pins its archive as well; if upstream re-pins one, follow.
 
-    `make sdk=ahi` hands that checksum to sdk/download, which leaves an archive that verifies
-    alone and otherwise discards it and reaches for the network the build step does not have.
+    `make sdk=<sdk>` hands the descriptor's checksum to sdk/download for download/<basename of
+    its Url>, which leaves an archive that verifies alone and otherwise discards it and reaches
+    for the network the build step does not have. So both the name and the checksum must agree.
     """
-    row = lock.file_row("m68k-amigaos-ahidev.lha")
-    found = re.search(r"^Sha256:[ \t]*(\S+)", (orch / "sdk" / "ahi.sdk").read_text(), re.M)
-    if not found:
-        raise LockError("sdk/ahi.sdk no longer carries a Sha256")
-    if found.group(1).lower() != row.sha256:
-        raise LockError(f"sdk/ahi.sdk Sha256 ({found.group(1)}) != lock {row.name} ({row.sha256})")
+    for row in lock.files:
+        if not row.sdk:
+            continue
+        descriptor = f"sdk/{row.sdk}.sdk"
+        text = (orch / descriptor).read_text()
+        url = re.search(r"^Url:[ \t]*(\S+)", text, re.M)
+        sha = re.search(r"^Sha256:[ \t]*(\S+)", text, re.M)
+        if not url or not sha:
+            raise LockError(f"{descriptor} no longer carries a Url and a Sha256")
+        expected_dest = Path(lock.git_row("m68k-amigaos-gcc").dest) / "download" / Path(url.group(1)).name
+        if Path(row.dest) != expected_dest:
+            raise LockError(f"{descriptor} downloads {expected_dest}, lock {row.name} goes to {row.dest}")
+        if sha.group(1).lower() != row.sha256:
+            raise LockError(f"{descriptor} Sha256 ({sha.group(1)}) != lock {row.name} ({row.sha256})")
 
 
 def poison_repos(orch: Path) -> None:
@@ -131,10 +145,11 @@ def main() -> int:
     provenance: list[tuple[str, str]] = []
 
     # ---- git rows: the orchestrator, its modules, and the host tools --------------------
+    # A pin-only row (aros, the Emu68 resources) is never checked out; only the files its @name@
+    # URLs name are fetched, but its pin is still what they were taken from.
     for row in lock.git:
-        if row.dest is None:
-            continue  # a pin-only row (aros): referenced by @aros@ URLs, never checked out
-        fetch_git(row.url, row.pin, SRC / row.dest)
+        if row.dest is not None:
+            fetch_git(row.url, row.pin, SRC / row.dest)
         provenance.append((row.name, row.pin))
 
     apply_clone_side_effects(lock, orch)
@@ -158,9 +173,10 @@ def main() -> int:
         provenance.append((row.name, row.sha256))
 
     check_makefile_pins(lock, orch)
-    check_ahi_sdk_pin(lock, orch)
+    check_sdk_pins(lock, orch)
     poison_repos(orch)
 
+    (SRC / "SDKS").write_text("".join(f"{row.sdk}\n" for row in lock.files if row.sdk))
     (SRC / "SOURCES").write_text("".join(f"{name} {value}\n" for name, value in provenance))
     print(">> sources ready:", flush=True)
     print((SRC / "SOURCES").read_text(), end="", flush=True)

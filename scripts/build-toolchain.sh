@@ -7,9 +7,10 @@
 # What gets built (the orchestrator's `all` minus gdb and ixemul, see README):
 #   binutils gcc gprof fd2sfd fd2pragma ira sfdc vasm libnix libgcc clib2 libdebug libpthread
 #   ndk ndk13 libnix4.library   (+ newlib and the Roadshow netinclude as libnix dependencies)
-#   sdk=ahi                     (AHI developer headers, used by poseidon's audio class)
+#   sdk=<each line of SDKS>     (ahi: neptune's audio class; p96: emu68's vchiq tools)
 #   lha, flexcat                host tools, built here from their pinned sources
 #   two NDK headers the orchestrator gets wrong, generated here with the same sfdc + NDK archive
+#   headers for the SFD-only interfaces in extra/sfd (the Emu68 resources), same sfdc
 set -euo pipefail
 
 SRC=${SRC:-/src}
@@ -60,8 +61,11 @@ dump_logs() { echo "build-toolchain: make failed; last lines of the per-step log
 echo ">> make $TARGETS"
 make -j"$JOBS" "${make_args[@]}" $TARGETS || { dump_logs; exit 1; }
 
-echo ">> make sdk=ahi"
-make "${make_args[@]}" sdk=ahi || { dump_logs; exit 1; }
+# Each from the archive pre-downloaded under download/, which sdk/download accepts by checksum.
+while read -r sdk; do
+	echo ">> make sdk=$sdk"
+	make "${make_args[@]}" sdk="$sdk" || { dump_logs; exit 1; }
+done < "$SRC/SDKS"
 
 # SANA-II headers: not in the NDK's Include_H nor in the Roadshow netinclude; the AROS copies
 # (pinned in toolchain.lock.json) are what consumers have always compiled against.
@@ -94,6 +98,23 @@ echo ">> bsdsocket: inline header generated from the NDK's Roadshow SFD"
 install -m644 "$ndk/SANA+RoadshowTCP-IP/sfd/bsdsocket_lib.sfd" "$PREFIX/m68k-amigaos/ndk/lib/sfd/"
 "$sfdc" --target=m68k-gcc-amigaos --mode=macros --quiet \
 	--output="$ndkinc/inline/bsdsocket.h" "$PREFIX/m68k-amigaos/ndk/lib/sfd/bsdsocket_lib.sfd"
+
+# ---- SFD-only interfaces (the Emu68 resources) --------------------------------------------
+# Upstream ships only the SFD (plus, for cma, a public header). Generate the headers with the
+# modes and targets of the orchestrator's sdk/install clib + sfdc verbs, so they match every
+# other SDK header under m68k-amigaos/include/ (sfdc's vbcc variant is left out, as for the NDK).
+sdkinc=$PREFIX/m68k-amigaos/include
+mkdir -p "$PREFIX/m68k-amigaos/lib/sfd" "$sdkinc/clib" "$sdkinc/proto" "$sdkinc/inline" "$sdkinc/lvo"
+for sfd in "$SRC"/extra/sfd/*_lib.sfd; do
+	name=$(basename "$sfd" _lib.sfd)
+	echo ">> $name: headers generated from its SFD"
+	install -m644 "$sfd" "$PREFIX/m68k-amigaos/lib/sfd/"
+	"$sfdc" --target=m68k-amigaos     --mode=clib   --quiet --output="$sdkinc/clib/${name}_protos.h" "$sfd"
+	"$sfdc" --target=m68k-gcc-amigaos --mode=proto  --quiet --output="$sdkinc/proto/$name.h" "$sfd"
+	"$sfdc" --target=m68k-gcc-amigaos --mode=macros --quiet --output="$sdkinc/inline/$name.h" "$sfd"
+	"$sfdc" --target=m68k-amigaos     --mode=lvo    --quiet --output="$sdkinc/lvo/$name.i" "$sfd"
+done
+( cd "$SRC/extra/include" && find . -type f -exec install -D -m644 {} "$sdkinc/{}" \; )
 
 echo ">> built: $("$PREFIX/bin/m68k-amigaos-gcc" --version | head -1)"
 

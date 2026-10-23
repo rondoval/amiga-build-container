@@ -42,6 +42,10 @@ for f in \
 	m68k-amigaos/ndk-include/devices/newstyle.h m68k-amigaos/ndk/lib/sfd/exec_lib.sfd \
 	m68k-amigaos/ndk/lib/sfd/bsdsocket_lib.sfd \
 	m68k-amigaos/include/devices/ahi.h m68k-amigaos/include/libraries/ahi_sub.h m68k-amigaos/include/proto/ahi.h \
+	m68k-amigaos/include/{proto,inline}/{devicetree,mailbox,cma,Picasso96}.h \
+	m68k-amigaos/include/clib/{devicetree,mailbox,cma,Picasso96}_protos.h \
+	m68k-amigaos/include/resources/cma.h m68k-amigaos/include/libraries/Picasso96.h \
+	m68k-amigaos/lib/sfd/{devicetree,mailbox,cma,Picasso96API}_lib.sfd \
 	lib/gcc/m68k-amigaos/$actual_version/libgcc.a etc/SOURCES \
 	bin/m68k-amigaos-gcc-ar bin/m68k-amigaos-gcc-ranlib bin/m68k-amigaos-gcc-nm \
 	libexec/gcc/m68k-amigaos/$actual_version/lto1 \

@@ -225,18 +225,32 @@ cat > headers.c <<'EOF'
 #include <devices/ahi.h>
 #include <libraries/ahi_sub.h>
 #include <proto/ahi.h>
+#include <proto/graphics.h>   /* P96's clib header uses struct RastPort without declaring it */
+#include <proto/Picasso96.h>  /* P96's own proto/inline headers, as sdk/p96.sdk installs them */
+#include <libraries/Picasso96.h>
+#include <proto/devicetree.h> /* the Emu68 resources: headers generated from their upstream SFDs */
+#include <proto/mailbox.h>
+#include <resources/cma.h>
+#include <proto/cma.h>
 #include <libraries/mui.h>
 #include <string.h>
 #include <stdint.h>
 struct Library *SocketBase;
 struct ExecBase *SysBase;
+struct Library *P96Base;
+APTR DeviceTreeBase, MailboxBase, CMABase;
+/* one call through each of the four bases (P96's LPn macros, sfdc's inline stubs) */
+struct BitMap *use_p96(void) { return p96AllocBitMap(640, 480, 32, BMF_USERPRIVATE, NULL, RGBFB_A8R8G8B8); }
+CONST_STRPTR use_dt(void) { return DT_GetKeyName(DT_OpenKey((CONST_STRPTR)"/emu68")); }
+ULONG use_mailbox(void) { return MB_GetClockRate(4); }
+APTR use_cma(void) { return CMA_AllocAligned(65536, 4096); }
 /* a "no return value" bsdsocket inline (the hand-written Roadshow header failed here on GCC >= 9) */
 void use_inline(struct List *l) { ReleaseInterfaceList(l); }
 /* a bsdsocket varargs wrapper (the hand-written header needed a typedef sfdc 1.13 stopped emitting) */
 LONG use_varargs(void) { return QueryInterfaceTags((STRPTR)"eth0", TAG_END); }
 struct NSDeviceQueryResult q = { 0, sizeof(struct NSDeviceQueryResult), NSDEVTYPE_SANA2, 0, NULL };
 EOF
-check "NDK 3.2 + netinclude + SANA-II + AHI + MUI headers compile (-I\$MUI_INCLUDE_DIR)" \
+check "NDK 3.2 + netinclude + SANA-II + AHI + P96 + Emu68 resource + MUI headers compile (-I\$MUI_INCLUDE_DIR)" \
 	"$CC" -O2 -m68040 -mhard-float -mcrt=nix20 -Wall -Wextra -Werror -Wno-array-bounds -I"${MUI_INCLUDE_DIR:?MUI_INCLUDE_DIR unset}" -c headers.c -o headers.o
 check "SANA2_INCLUDE_DIR points at devices/sana2.h" test -f "${SANA2_INCLUDE_DIR:?SANA2_INCLUDE_DIR unset}/devices/sana2.h"
 check "MUI SDK has the explicit-base inline path" test -f "$MUI_INCLUDE_DIR/inline/muimaster.h" -a -f "$MUI_INCLUDE_DIR/defines/muimaster.h"
@@ -251,7 +265,7 @@ check "fd2pragma present" test -x "$PREFIX/bin/fd2pragma"
 check "flexcat present" bash -c "command -v flexcat >/dev/null && (flexcat >/dev/null 2>&1; [ \$? -ne 127 ])"
 check "vasm present" test -x "$PREFIX/bin/vasmm68k_mot"
 mkdir -p cat/français && echo catalog > cat/français/x.catalog
-check "lha archives UTF-8 names as latin-1 (poseidon Packaging.cmake flags)" \
+check "lha archives UTF-8 names as latin-1 (neptune Packaging.cmake flags)" \
 	bash -c "lha aq2 --system-kanji-code=utf8 --archive-kanji-code=latin1 $T/t.lha cat && lha t $T/t.lha"
 cmv=$(cmake --version | awk 'NR==1 { print $3 }')
 check "cmake >= 3.30 (have $cmv)" bash -c "printf '%s\n3.30\n' '$cmv' | sort -V | head -1 | grep -qx 3.30"

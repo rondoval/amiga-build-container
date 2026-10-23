@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 # Shared Amiga (m68k-amigaos) build image for the driver stacks (emu68-driver-stack,
-# poseidon-backport). Everything is built here from the pinned sources listed in
+# neptune-usb-stack). Everything is built here from the pinned sources listed in
 # toolchain.lock.json; no prebuilt toolchain image is consumed.
 #
 #   toolchain  ubuntu + build deps; fetch pinned sources (networked); build into /opt/amiga (offline)
@@ -59,7 +59,7 @@ ENV MUI_INCLUDE_DIR=/opt/mui-sdk/SDK/MUI/C/include
 ENV SANA2_INCLUDE_DIR=/opt/amiga/m68k-amigaos/ndk-include
 
 # Official MUI 5.0 developer SDK (amiga-mui/muidev), the COMPLETE archive extracted unmodified.
-# Its explicit-base inline headers are what poseidon builds against (MUI_INCLUDE_DIR).
+# Its explicit-base inline headers are what neptune builds against (MUI_INCLUDE_DIR).
 COPY --from=toolchain /src/download/MUI-5.0-20210831-os3.lha /tmp/mui.lha
 RUN mkdir -p /opt/mui-sdk \
  && cd /opt/mui-sdk \
@@ -73,7 +73,7 @@ RUN mkdir -p /opt/mui-sdk \
 COPY toolchain.lock.json /opt/amiga/etc/toolchain.lock.json
 
 LABEL org.opencontainers.image.source="https://github.com/rondoval/amiga-build-container" \
-      org.opencontainers.image.description="m68k-amigaos GCC cross toolchain (AmigaPorts amiga16.2) + NDK 3.2 + MUI 5 SDK + cmake, built from pinned sources"
+      org.opencontainers.image.description="m68k-amigaos GCC cross toolchain (AmigaPorts amiga16.2) + NDK 3.2 + AHI, P96 and Emu68 resource headers + MUI 5 SDK + cmake, built from pinned sources"
 
 # ---------------------------------------------------------------------------------------------
 FROM final AS test
