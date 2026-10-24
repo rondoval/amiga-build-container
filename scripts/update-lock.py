@@ -76,7 +76,7 @@ def main(argv: list[str] | None = None) -> int:
             for row in lock.files:
                 if not wanted(row.name):
                     continue
-                # expanded against the pins as just moved, so an @aros@ URL follows the bump
+                # expanded against the pins as just moved, so an @<name>@ URL follows the bump
                 url = lock.expand_url(row.url)
                 print(f">> {row.name} <- {url}")
                 downloaded = Path(tmpdir) / row.name

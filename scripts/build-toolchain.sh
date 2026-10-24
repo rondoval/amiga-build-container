@@ -6,9 +6,10 @@
 #
 # What gets built (the orchestrator's `all` minus gdb and ixemul, see README):
 #   binutils gcc gprof fd2sfd fd2pragma ira sfdc vasm libnix libgcc clib2 libdebug libpthread
-#   ndk ndk13 libnix4.library   (+ newlib and the Roadshow netinclude as libnix dependencies)
+#   ndk ndk13 libnix4.library   (+ newlib and the Roadshow netinclude as libnix dependencies,
+#                                lha as the NDK unpack's and the SDK installer's)
 #   sdk=<each line of SDKS>     (ahi: neptune's audio class; p96: emu68's vchiq tools)
-#   lha, flexcat                host tools, built here from their pinned sources
+#   flexcat                     host tool, built here from its pinned source
 #   two NDK headers the orchestrator gets wrong, generated here with the same sfdc + NDK archive
 #   headers for the SFD-only interfaces in extra/sfd (the Emu68 resources), same sfdc
 set -euo pipefail
@@ -18,9 +19,11 @@ ORCH=$SRC/amiga-gcc
 PREFIX=${PREFIX:-/opt/amiga}
 JOBS=${JOBS:-$(nproc)}
 
-# The Makefile's `all` when HOST is empty. We deliberately build a subset; if upstream changes
-# `all`, fail so the subset below gets reviewed instead of silently drifting.
-EXPECTED_ALL='all: gcc binutils gdb gprof fd2sfd fd2pragma ira sfdc vasm libnix ixemul libgcc clib2 libdebug libpthread ndk ndk13 libnix4.library'
+# The Makefile's `all` ($(ALL_GDB) is gdb when HOST is empty). We deliberately build a subset,
+# and never `all` itself, whose recipe also writes the module manifest from the .git trees
+# fetch-sources.py drops; if upstream changes `all`, fail so the subset below gets reviewed
+# instead of silently drifting.
+EXPECTED_ALL='all: gcc binutils $(ALL_GDB) gprof fd2sfd fd2pragma ira sfdc vasm libnix ixemul libgcc clib2 libdebug libpthread ndk ndk13 libnix4.library'
 TARGETS='binutils gcc gprof fd2sfd fd2pragma ira sfdc vasm libnix libgcc clib2 libdebug libpthread ndk ndk13 libnix4.library'
 
 cd "$ORCH"
@@ -39,13 +42,7 @@ mkdir -p "$PREFIX/bin" "$PREFIX/etc"
 export PATH=$PREFIX/bin:$PATH
 
 # ---- host tools ----------------------------------------------------------------------------
-# lha first: the Makefile's $(PREFIX)/bin/lha file rule (which would clone a branch head) is
-# satisfied by the file existing, and the NDK unpack + sdk installer need it.
-echo ">> building lha"
-( cd "$SRC/lha" && autoreconf -fi && ./configure --prefix="$PREFIX" && make -j"$JOBS" all ) > "$SRC/lha.log" 2>&1 \
-	|| { tail -n 100 "$SRC/lha.log"; exit 1; }
-install -m755 "$SRC/lha/src/lha" "$PREFIX/bin/lha"
-
+# lha is an orchestrator module (projects/lha), built by make for the NDK unpack.
 echo ">> building flexcat"
 ( cd "$SRC/flexcat/src" && make OS=unix CC=cc DEBUG= DEBUGSYM= bootstrap && make OS=unix CC=cc DEBUG= DEBUGSYM= ) > "$SRC/flexcat.log" 2>&1 \
 	|| { tail -n 100 "$SRC/flexcat.log"; exit 1; }
@@ -61,15 +58,13 @@ dump_logs() { echo "build-toolchain: make failed; last lines of the per-step log
 echo ">> make $TARGETS"
 make -j"$JOBS" "${make_args[@]}" $TARGETS || { dump_logs; exit 1; }
 
-# Each from the archive pre-downloaded under download/, which sdk/download accepts by checksum.
+# Each from the archive pre-downloaded under download/, which scripts/sdk-download accepts by
+# checksum.
 while read -r sdk; do
 	echo ">> make sdk=$sdk"
 	make "${make_args[@]}" sdk="$sdk" || { dump_logs; exit 1; }
 done < "$SRC/SDKS"
 
-# SANA-II headers: not in the NDK's Include_H nor in the Roadshow netinclude; the AROS copies
-# (pinned in toolchain.lock.json) are what consumers have always compiled against.
-install -m644 "$SRC"/extra/devices/*.h "$PREFIX/m68k-amigaos/ndk-include/devices/"
 install -m644 "$SRC/SOURCES" "$PREFIX/etc/SOURCES"
 
 # ---- two NDK headers the orchestrator gets wrong ------------------------------------------
@@ -101,8 +96,9 @@ install -m644 "$ndk/SANA+RoadshowTCP-IP/sfd/bsdsocket_lib.sfd" "$PREFIX/m68k-ami
 
 # ---- SFD-only interfaces (the Emu68 resources) --------------------------------------------
 # Upstream ships only the SFD (plus, for cma, a public header). Generate the headers with the
-# modes and targets of the orchestrator's sdk/install clib + sfdc verbs, so they match every
-# other SDK header under m68k-amigaos/include/ (sfdc's vbcc variant is left out, as for the NDK).
+# modes and targets of the orchestrator's scripts/sdk-install clib + sfdc verbs, so they match
+# every other SDK header under m68k-amigaos/include/ (sfdc's vbcc variant is left out, as for
+# the NDK).
 sdkinc=$PREFIX/m68k-amigaos/include
 mkdir -p "$PREFIX/m68k-amigaos/lib/sfd" "$sdkinc/clib" "$sdkinc/proto" "$sdkinc/inline" "$sdkinc/lvo"
 for sfd in "$SRC"/extra/sfd/*_lib.sfd; do
@@ -120,5 +116,5 @@ echo ">> built: $("$PREFIX/bin/m68k-amigaos-gcc" --version | head -1)"
 
 # Everything below /src except what later stages copy (download/MUI*.lha, extra/, SOURCES).
 cd /
-rm -rf "$BUILD" "$ORCH" "$SRC/lha" "$SRC/flexcat" "$SRC"/*.log
+rm -rf "$BUILD" "$ORCH" "$SRC/flexcat" "$SRC"/*.log
 du -sh "$PREFIX"

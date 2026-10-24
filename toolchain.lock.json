@@ -6,7 +6,7 @@
       "name": "m68k-amigaos-gcc",
       "url": "https://github.com/AmigaPorts/m68k-amigaos-gcc",
       "ref": "master",
-      "pin": "433b3f3839d3fcf79667d906bbca67a7a2b797b6",
+      "pin": "a83871b3a2dff029ab314639451360577dbb8ffe",
       "dest": "amiga-gcc",
       "note": "the orchestrator: its Makefile builds every module below"
     },
@@ -14,25 +14,23 @@
       "name": "gcc",
       "url": "https://github.com/AmigaPorts/gcc",
       "ref": "amiga16.2",
-      "pin": "0d8ac1c0870baf66ae64956d19439c80c721c0c7",
+      "pin": "06a35910940c8aea01ec85b8270770342aa88a88",
       "dest": "amiga-gcc/projects/gcc",
-      "marker": "configure",
-      "patched": true
+      "marker": "configure"
     },
     {
       "name": "binutils",
       "url": "https://github.com/AmigaPorts/binutils-gdb",
       "ref": "amiga-2.46",
-      "pin": "2ec6e0843aec9edbc03886516a310bbb6c10e606",
+      "pin": "15f4b0aa860f74022c6aff7ace15bc0a307d5510",
       "dest": "amiga-gcc/projects/binutils",
-      "marker": "configure",
-      "patched": true
+      "marker": "configure"
     },
     {
       "name": "newlib-cygwin",
       "url": "https://github.com/AmigaPorts/newlib-cygwin",
       "ref": "amiga",
-      "pin": "d8eff91f1916ee996c30f10e90984563cddc310f",
+      "pin": "16731e68379f87809e9f280f565c34dd648971ec",
       "dest": "amiga-gcc/projects/newlib-cygwin",
       "marker": "newlib/configure"
     },
@@ -40,7 +38,7 @@
       "name": "libnix",
       "url": "https://github.com/AmigaPorts/libnix",
       "ref": "master",
-      "pin": "0a1d18a0938dce3f7a234963bcb7fa6148f6a6f3",
+      "pin": "c4fd616d48ab29754de88589888f078259fb4565",
       "dest": "amiga-gcc/projects/libnix",
       "marker": "Makefile.gcc6"
     },
@@ -48,7 +46,7 @@
       "name": "clib2",
       "url": "https://github.com/AmigaPorts/clib2",
       "ref": "master",
-      "pin": "842c0c66e6338e133b8ca1d57f85c8a7b346b115",
+      "pin": "78e05e255495382bbf880d0d37d20763d129f01e",
       "dest": "amiga-gcc/projects/clib2",
       "marker": "LICENSE"
     },
@@ -56,7 +54,7 @@
       "name": "libdebug",
       "url": "https://github.com/AmigaPorts/libdebug",
       "ref": "master",
-      "pin": "42d9d3a7a0d26fa4679384ffc78cf79fbce394d8",
+      "pin": "76c7dbfeaac79516117dc810e3ba9b34d5f54a69",
       "dest": "amiga-gcc/projects/libdebug",
       "marker": "configure"
     },
@@ -72,10 +70,9 @@
       "name": "fd2sfd",
       "url": "https://github.com/AmigaPorts/fd2sfd",
       "ref": "master",
-      "pin": "189ac23b5b2d0d0555381404d75e0508c2e95920",
+      "pin": "a0ae60d140fdfd30f889810faea07cc6968d1fd0",
       "dest": "amiga-gcc/projects/fd2sfd",
-      "marker": "configure",
-      "patched": true
+      "marker": "configure"
     },
     {
       "name": "fd2pragma",
@@ -105,7 +102,7 @@
       "name": "aros-stuff",
       "url": "https://github.com/AmigaPorts/aros-stuff",
       "ref": "master",
-      "pin": "86711c70569ffc6b70ee1fb99895866c1d9f30e4",
+      "pin": "469a7dc16efe1e04784e75cd50c23b0162e99c4c",
       "dest": "amiga-gcc/projects/aros-stuff",
       "marker": "pthreads/Makefile"
     },
@@ -113,7 +110,7 @@
       "name": "amiga-netinclude",
       "url": "https://github.com/AmigaPorts/amiga-netinclude",
       "ref": "main",
-      "pin": "7d155ca3a3090afe3466f819dd178f2af6f5c176",
+      "pin": "864c5395aeaf2f7600bdd24f8befcb0b517ed357",
       "dest": "amiga-gcc/projects/amiga-netinclude",
       "marker": "README.md"
     },
@@ -121,9 +118,9 @@
       "name": "lha",
       "url": "https://github.com/AmigaPorts/lha",
       "ref": "master",
-      "pin": "08486d2da2ca77a6adf83194fd67400c8d86e7c7",
-      "dest": "lha",
-      "note": "host tool, built by build-toolchain.sh before make (also satisfies the Makefile's own lha rule)"
+      "pin": "979815dc8699a9c5018de067946737c83ec6f697",
+      "dest": "amiga-gcc/projects/lha",
+      "marker": "configure"
     },
     {
       "name": "flexcat",
@@ -134,18 +131,11 @@
       "note": "host tool, built by build-toolchain.sh"
     },
     {
-      "name": "aros",
-      "url": "https://github.com/aros-development-team/AROS",
-      "ref": "master",
-      "pin": "5da9fd5072899aba267f0639509601a78bfcfd32",
-      "note": "never fetched; only anchors the @aros@ placeholder in the file URLs below"
-    },
-    {
       "name": "devicetree.resource",
       "url": "https://github.com/michalsc/devicetree.resource",
       "ref": "main",
       "pin": "064095a749f72df8fa5165670a7ed16911a566c7",
-      "note": "never fetched, like aros: anchors the @<name>@ placeholders of the Emu68 resource rows below"
+      "note": "never fetched: anchors the @<name>@ placeholders of the Emu68 resource rows below"
     },
     {
       "name": "mailbox.resource",
@@ -166,7 +156,7 @@
       "url": "https://aminet.net/dev/misc/NDK3.2.lha",
       "sha256": "96cabd4ad683dced632e147bf86dee0f50dcb1254386216c25c362916a6409bb",
       "dest": "amiga-gcc/download/NDK3.2.lha",
-      "makefile_pin": "NDK_SHA256",
+      "archive": "ndk",
       "note": "unpacked by the Makefile's ndk rule"
     },
     {
@@ -174,7 +164,7 @@
       "url": "https://gcc.gnu.org/pub/gcc/infrastructure/gmp-6.2.1.tar.bz2",
       "sha256": "eae9326beb4158c386e39a356818031bd28f3124cf915f8c5b1dc4c7a36b4d7c",
       "dest": "amiga-gcc/download/gmp-6.2.1.tar.bz2",
-      "makefile_pin": "GMP_SHA256",
+      "archive": "gmp",
       "note": "gmp, mpfr and mpc are always built in-tree: the Makefile copies each into the gcc and binutils source trees, so the toolchain does not depend on the host's versions"
     },
     {
@@ -182,14 +172,14 @@
       "url": "https://gcc.gnu.org/pub/gcc/infrastructure/mpfr-4.1.0.tar.bz2",
       "sha256": "feced2d430dd5a97805fa289fed3fc8ff2b094c02d05287fd6133e7f1f0ec926",
       "dest": "amiga-gcc/download/mpfr-4.1.0.tar.bz2",
-      "makefile_pin": "MPFR_SHA256"
+      "archive": "mpfr"
     },
     {
       "name": "mpc-1.2.1.tar.gz",
       "url": "https://gcc.gnu.org/pub/gcc/infrastructure/mpc-1.2.1.tar.gz",
       "sha256": "17503d2c395dfcf106b622dc142683c1199431d095367c6aacba6eec30340459",
       "dest": "amiga-gcc/download/mpc-1.2.1.tar.gz",
-      "makefile_pin": "MPC_SHA256"
+      "archive": "mpc"
     },
     {
       "name": "m68k-amigaos-ahidev.lha",
@@ -206,19 +196,6 @@
       "dest": "amiga-gcc/download/P96Develop.lha",
       "sdk": "p96",
       "note": "P96 3.6.1 application headers (CC-BY, iComp)"
-    },
-    {
-      "name": "sana2.h",
-      "url": "https://raw.githubusercontent.com/aros-development-team/AROS/@aros@/compiler/include/devices/sana2.h",
-      "sha256": "519e40912c11084e85d5e2ea999cadc304665b92d2e9d85caf543e3caa07e3a1",
-      "dest": "extra/devices/sana2.h",
-      "note": "AROS SANA-II header: in neither the NDK nor the Roadshow netinclude"
-    },
-    {
-      "name": "sana2specialstats.h",
-      "url": "https://raw.githubusercontent.com/aros-development-team/AROS/@aros@/compiler/include/devices/sana2specialstats.h",
-      "sha256": "bfca3166feb0e40ed8bf821be7a75f5e1636ea5beadca131e5dcbc0f8ea15c71",
-      "dest": "extra/devices/sana2specialstats.h"
     },
     {
       "name": "devicetree_lib.sfd",

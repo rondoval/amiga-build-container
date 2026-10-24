@@ -43,8 +43,6 @@ class GitRow:
     marker  the file whose presence stops the orchestrator's Makefile from cloning this
             module itself (its clone rules are guarded by a marker file). Absent for the
             orchestrator and for host tools, which no Makefile rule clones.
-    patched the Makefile's clone rule for this module also applies patches/<name>/*.diff,
-            so fetch-sources.py has to do the same after checking it out.
     """
 
     name: str
@@ -53,7 +51,6 @@ class GitRow:
     pin: str
     dest: str | None = None
     marker: str | None = None
-    patched: bool = False
     note: str | None = None
 
 
@@ -64,20 +61,20 @@ class FileRow:
     url may contain an @<git row name>@ placeholder, replaced by that row's pin.
     dest is relative to /src.
 
-    makefile_pin  the variable the orchestrator's Makefile pins this same file with. Our row
-                  has to agree with it: the Makefile's download rule is satisfied by the
-                  pre-downloaded file only under the name that variable's version spells, so an
-                  upstream re-pin would send the offline build step looking for the network.
+    archive       the name the orchestrator's default-archives lists this same file under. Our
+                  row has to agree with that entry: the Makefile's download rule is satisfied by
+                  the pre-downloaded file only under the file name and checksum the entry gives,
+                  so an upstream re-pin would send the offline build step looking for the network.
     sdk           the orchestrator's sdk/<sdk>.sdk descriptor that installs this archive. The
                   build step runs `make sdk=<sdk>` for it, and the descriptor's Sha256: line pins
-                  the same file, so the two must agree for the same reason as makefile_pin.
+                  the same file, so the two must agree for the same reason as archive.
     """
 
     name: str
     url: str
     sha256: str
     dest: str
-    makefile_pin: str | None = None
+    archive: str | None = None
     sdk: str | None = None
     note: str | None = None
 

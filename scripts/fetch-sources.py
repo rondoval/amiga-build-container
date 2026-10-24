@@ -8,13 +8,12 @@ the lock; this script keeps no per-module tables of its own.
 
 Layout produced (the `dest` of each row, relative to /src):
   /src/amiga-gcc/                 orchestrator (AmigaPorts/m68k-amigaos-gcc) at its pin
-  /src/amiga-gcc/projects/<mod>/  every module at its pin (so `make` never clones)
+  /src/amiga-gcc/projects/<mod>/  every module at its pin, lha included (so `make` never clones)
   /src/amiga-gcc/download/        NDK3.2.lha, the SDK archives (AHI, P96), the gmp/mpfr/mpc
                                   tarballs gcc and binutils are built with (so `make` never
                                   downloads)
-  /src/lha, /src/flexcat          host tools, built by build-toolchain.sh
+  /src/flexcat                    host tool, built by build-toolchain.sh
   /src/download/<MUI .lha>        extracted in the final stage
-  /src/extra/devices/*.h          AROS SANA-II headers, installed by build-toolchain.sh
   /src/extra/sfd/*.sfd            SFD-only interfaces (the Emu68 resources); build-toolchain.sh
                                   generates their headers
   /src/extra/include/             headers installed as they are under m68k-amigaos/include/
@@ -34,34 +33,18 @@ import shutil  # noqa: E402
 from datetime import datetime  # noqa: E402
 from pathlib import Path  # noqa: E402
 
-from lock import Lock, LockError, fetch_git, fetch_verified, run  # noqa: E402
+from lock import Lock, LockError, fetch_git, fetch_verified  # noqa: E402
 
 SRC = Path(os.environ.get("SRC", "/src"))
 LOCK = Path(os.environ.get("LOCK", SRC / "toolchain.lock.json"))
 
-# Where a clone rule would have put a module's patches, relative to the orchestrator.
-PATCH_DIR = "patches"
 
-
-def apply_clone_side_effects(lock: Lock, orch: Path) -> None:
+def apply_clone_side_effects(lock: Lock) -> None:
     """Do what the Makefile's clone rules do besides cloning.
 
     Pre-populating projects/<mod> stops those rules from running at all, so anything else they
-    would have done has to happen here instead.
+    would have done has to happen here instead. The only one left is libdebug's:
     """
-    # gcc, binutils and fd2sfd: apply patches/<mod>/**/*.diff, where each diff's path under
-    # patches/ mirrors the file it patches under projects/. (Empty upstream today.)
-    for row in lock.git:
-        if not row.patched:
-            continue
-        root = orch / PATCH_DIR / row.name
-        if not root.is_dir():
-            continue
-        for diff in sorted(root.rglob("*.diff")):
-            target = orch / "projects" / diff.relative_to(orch / PATCH_DIR).with_suffix("")
-            print(f">> patch {target} < {diff}", flush=True)
-            run(["patch", "-N", str(target), str(diff)])
-
     # libdebug: its clone rule backdates configure.ac so that configure is always newer and
     # autoreconf never re-runs. `touch -t 0001010000` is local midnight on 2000-01-01.
     stamp = datetime(2000, 1, 1).timestamp()
@@ -78,35 +61,37 @@ def check_markers(lock: Lock) -> None:
             )
 
 
-def check_makefile_pins(lock: Lock, orch: Path) -> None:
-    """The Makefile pins some of these archives too; if upstream re-pins one, our lock must follow.
+def check_archive_pins(lock: Lock, orch: Path) -> None:
+    """The orchestrator pins some of these archives too; if upstream re-pins one, our lock must follow.
 
-    Its download rules are satisfied by a file already sitting in download/ under the name the
-    pinned version spells, which is what lets the build step run offline. A new NDK or a newer
-    gmp would rename that file, so the build would reach for the network and fail deep into the
-    toolchain instead; fail here, where the fix is one lock row.
+    Its default-archives lists each as `name file sha256 url...`, and the Makefile's download
+    rule for download/<file> is satisfied by a pre-downloaded file that verifies against that
+    sha256, which is what lets the build step run offline. A new NDK or a newer gmp would
+    change the file or the checksum, so the build would reach for the network and fail deep
+    into the toolchain instead; fail here, where the fix is one lock row.
     """
-    makefile = (orch / "Makefile").read_text()
+    entries = {}
+    for line in (orch / "default-archives").read_text().splitlines():
+        fields = line.split()
+        if fields and not fields[0].startswith("#"):
+            entries[fields[0]] = fields
+    download = Path(lock.git_row("m68k-amigaos-gcc").dest) / "download"
     for row in lock.files:
-        if not row.makefile_pin:
+        if not row.archive:
             continue
-        # Every assignment, not the first: the Makefile sets NDK_SHA256 once per NDK it can
-        # build against (3.2 and 3.9), and which branch comes first is not ours to rely on.
-        # [ \t]* and not \s*: an empty assignment must not match across the line break and
-        # capture the next line's variable name.
-        found = re.findall(rf"^{re.escape(row.makefile_pin)}[ \t]*:=[ \t]*(\S+)", makefile, re.M)
-        if not found:
-            raise LockError(f"the orchestrator Makefile no longer sets {row.makefile_pin}")
-        if row.sha256 not in found:
-            raise LockError(
-                f"Makefile {row.makefile_pin} ({', '.join(found)}) != lock {row.name} ({row.sha256})"
-            )
+        if row.archive not in entries or len(entries[row.archive]) < 3:
+            raise LockError(f"the orchestrator's default-archives no longer lists {row.archive}")
+        _, file, sha256 = entries[row.archive][:3]
+        if Path(row.dest) != download / file:
+            raise LockError(f"default-archives {row.archive} is {download / file}, lock {row.name} goes to {row.dest}")
+        if sha256.lower() != row.sha256:
+            raise LockError(f"default-archives {row.archive} ({sha256}) != lock {row.name} ({row.sha256})")
 
 
 def check_sdk_pins(lock: Lock, orch: Path) -> None:
     """Each SDK's .sdk descriptor pins its archive as well; if upstream re-pins one, follow.
 
-    `make sdk=<sdk>` hands the descriptor's checksum to sdk/download for download/<basename of
+    `make sdk=<sdk>` hands the descriptor's checksum to scripts/sdk-download for download/<basename of
     its Url>, which leaves an archive that verifies alone and otherwise discards it and reaches
     for the network the build step does not have. So both the name and the checksum must agree.
     """
@@ -145,14 +130,14 @@ def main() -> int:
     provenance: list[tuple[str, str]] = []
 
     # ---- git rows: the orchestrator, its modules, and the host tools --------------------
-    # A pin-only row (aros, the Emu68 resources) is never checked out; only the files its @name@
+    # A pin-only row (the Emu68 resources) is never checked out; only the files its @name@
     # URLs name are fetched, but its pin is still what they were taken from.
     for row in lock.git:
         if row.dest is not None:
             fetch_git(row.url, row.pin, SRC / row.dest)
         provenance.append((row.name, row.pin))
 
-    apply_clone_side_effects(lock, orch)
+    apply_clone_side_effects(lock)
     check_markers(lock)
 
     # The Makefile reads gcc's version from this file at parse time, so it must be in place
@@ -172,7 +157,7 @@ def main() -> int:
         fetch_verified(lock.expand_url(row.url), row.sha256, SRC / row.dest)
         provenance.append((row.name, row.sha256))
 
-    check_makefile_pins(lock, orch)
+    check_archive_pins(lock, orch)
     check_sdk_pins(lock, orch)
     poison_repos(orch)
 

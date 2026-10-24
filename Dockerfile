@@ -19,7 +19,7 @@ FROM ${UBUNTU} AS sources
 ENV DEBIAN_FRONTEND=noninteractive LC_ALL=C.UTF-8
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
-      autoconf automake bison build-essential bzip2 ca-certificates curl file flex gettext git \
+      bison build-essential bzip2 ca-certificates curl file flex gettext git \
       make patch perl python3 rsync wget xz-utils \
  && rm -rf /var/lib/apt/lists/*
 

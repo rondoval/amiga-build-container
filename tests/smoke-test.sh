@@ -36,25 +36,30 @@ fi
 check "/opt/m68k-amigaos alias resolves to the same gcc" test "$(readlink -f /opt/m68k-amigaos/bin/m68k-amigaos-gcc)" = "$(readlink -f "$CC")"
 check "toolchain bin on PATH" test "$(command -v m68k-amigaos-gcc)" = "$CC"
 check "\$HOME is writable" touch "$HOME/.smoke-probe"
-check "-print-multi-lib lists >= 10 multilibs" test "$("$CC" -print-multi-lib | wc -l)" -ge 10
+check "-print-multi-lib lists >= 8 multilibs" test "$("$CC" -print-multi-lib | wc -l)" -ge 8
 
 # ---- multilib selection ---------------------------------------------------------------------
 # Which libgcc, libnix, libdebug and libpthread a stack links is decided by MULTILIB_MATCHES.
-# Before the amiga16.2 fix only -m68020 and -m68060 named a multilib built for them: -m68030,
-# -m68040, -m68020-40 and every -march= spelling fell through to the 68000 libraries, so the
-# -m68040 stacks linked 68000 code into every library call. The spellings checked here are the
-# ones the consumers offer (M68K_CPU), -m68040 being their default.
+# One 020 multilib, built with -m68020-60, serves every 020-class CPU (there is no 060 one any
+# more), and -mhard-float selects its 68881 variant like -m68881 does. Before, -m68030, -m68040
+# and the -march= spellings fell through to the 68000 libraries, and later -mhard-float alone
+# still got the soft-float ones, so the -m68040 -mhard-float stacks linked soft-float library
+# code. The spellings checked here are the ones the consumers offer (M68K_CPU, M68K_FPU),
+# -m68040 -mhard-float being their default.
 multi_dir_is() {
 	local want=$1 got; shift
 	got=$("$CC" -print-multi-directory "$@") || return 1
 	[ "$got" = "$want" ] || { echo "-print-multi-directory $*: '$got', want '$want'"; return 1; }
 }
-check "-m68020 links the 020 multilib" multi_dir_is libm020 -m68020 -mhard-float
-check "-m68030 links the 020 multilib" multi_dir_is libm020 -m68030 -mhard-float
-check "-m68040 links the 020 multilib" multi_dir_is libm020 -m68040 -mhard-float
-check "-m68060 links the 060 multilib" multi_dir_is libm060 -m68060 -mhard-float
+for cpu in 68020 68030 68040 68060; do
+	check "-m$cpu -msoft-float links the 020 multilib" multi_dir_is libm020 -m$cpu -msoft-float
+	check "-m$cpu -mhard-float links the 020 68881 multilib" multi_dir_is libm020/libm881 -m$cpu -mhard-float
+done
+check "-m68040 -m68881 links the 020 68881 multilib" multi_dir_is libm020/libm881 -m68040 -m68881
 check "-m68000 links the root multilib" multi_dir_is . -m68000 -msoft-float
 check "-m68040 -fbaserel links the baserel 020 multilib" multi_dir_is libb/libm020 -m68040 -fbaserel
+check "-m68040 -mhard-float -fbaserel links the baserel 020 68881 multilib" \
+	multi_dir_is libb/libm020/libm881 -m68040 -mhard-float -fbaserel
 
 # ---- register-argument traps ----------------------------------------------------------------
 # The AmigaOS ABI passes arguments in named registers, via asm("a1") on the parameter. Two ways
@@ -146,7 +151,7 @@ void work(void) {
 EOF
 build_device() {
 	"$CC" -O2 -m68040 -mhard-float -fomit-frame-pointer -mcrt=nix20 -ffreestanding \
-		-Wall -Wno-array-bounds -c dev.c -o dev.o || return 1
+		-Wall -c dev.c -o dev.o || return 1
 	"$CC" -mcrt=nix20 -nostdlib -nostartfiles -s -Wl,-e,_doNotExecute dev.o -o dev.device \
 		-Wl,--start-group -lc -lamiga -ldebug -lgcc -Wl,--end-group || return 1
 	hunk_magic dev.device || { echo "linked, but the result is not a HUNK executable"; return 1; }
@@ -251,7 +256,23 @@ LONG use_varargs(void) { return QueryInterfaceTags((STRPTR)"eth0", TAG_END); }
 struct NSDeviceQueryResult q = { 0, sizeof(struct NSDeviceQueryResult), NSDEVTYPE_SANA2, 0, NULL };
 EOF
 check "NDK 3.2 + netinclude + SANA-II + AHI + P96 + Emu68 resource + MUI headers compile (-I\$MUI_INCLUDE_DIR)" \
-	"$CC" -O2 -m68040 -mhard-float -mcrt=nix20 -Wall -Wextra -Werror -Wno-array-bounds -I"${MUI_INCLUDE_DIR:?MUI_INCLUDE_DIR unset}" -c headers.c -o headers.o
+	"$CC" -O2 -m68040 -mhard-float -mcrt=nix20 -Wall -Wextra -Werror -I"${MUI_INCLUDE_DIR:?MUI_INCLUDE_DIR unset}" -c headers.c -o headers.o
+# ---- fixed addresses ----------------------------------------------------------------------------
+# The stacks read SysBase from address 4 (also through EXEC_BASE_NAME in the inline headers) and
+# MMIO from fixed addresses. -Warray-bounds used to take such a read for a null-pointer access
+# ("source object is likely at address zero"), so the consumers carried -Wno-array-bounds; since
+# amiga16.2 0edaa6190 m68k-amigaos defaults to --param=min-pagesize=0 and needs no switch.
+cat > absaddr.c <<'EOF'
+#define __NOLIBBASE__
+#define EXEC_BASE_NAME (*(struct ExecBase **)4)
+#include <exec/execbase.h>
+#include <proto/exec.h>
+APTR use_abs_base(void) { return AllocMem(16, MEMF_PUBLIC); }
+UWORD sysbase_version(void) { return (*(struct ExecBase **)4)->LibNode.lib_Version; }
+ULONG read_mmio(void) { return *(volatile ULONG *)0xf2003004; }
+EOF
+check "fixed-address reads (SysBase at 4, MMIO) compile with -Warray-bounds on" \
+	"$CC" -O2 -m68040 -mhard-float -mcrt=nix20 -Wall -Wextra -Werror -c absaddr.c -o absaddr.o
 check "SANA2_INCLUDE_DIR points at devices/sana2.h" test -f "${SANA2_INCLUDE_DIR:?SANA2_INCLUDE_DIR unset}/devices/sana2.h"
 check "MUI SDK has the explicit-base inline path" test -f "$MUI_INCLUDE_DIR/inline/muimaster.h" -a -f "$MUI_INCLUDE_DIR/defines/muimaster.h"
 check "libraries/keymap.h (NDK 3.2 addition)" test -f "$PREFIX/m68k-amigaos/ndk-include/libraries/keymap.h"

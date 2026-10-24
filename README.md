@@ -7,14 +7,14 @@ A shared **m68k-amigaos cross-build image** for the Amiga driver/stack projects
 The toolchain is **built from source here**, from the commits pinned in
 [`toolchain.lock.json`](toolchain.lock.json). The sources are the actively maintained AmigaPorts
 continuation of Bebbo's amiga-gcc, and every input (16 git modules, the NDK archive, the AHI
-and P96 developer kits, the AROS SANA-II headers, the Emu68 resource SFDs, the MUI SDK, gcc's
-gmp/mpfr/mpc prerequisites) is pinned by commit or sha256.
+and P96 developer kits, the Emu68 resource SFDs, the MUI SDK, gcc's gmp/mpfr/mpc
+prerequisites) is pinned by commit or sha256.
 
 ## Tags
 
 | Tag | Meaning |
 |---|---|
-| `gcc-v16.2` | gcc 16.2.0b (`AmigaPorts/gcc` branch `amiga16.2`) + binutils 2.46, the current toolchain |
+| `gcc-v16.2` | gcc 16.2.1b (`AmigaPorts/gcc` branch `amiga16.2`) + binutils 2.46, the current toolchain |
 | `latest` | same as `gcc-v16.2` |
 | `sha-<git7>` | the candidate built from that commit of this repo; promoted to the two tags above after the consumer gate |
 | `gcc-v6.5.0b`, `gcc-v13.4`, `gcc-v15.2`, `gcc-v16.1` | frozen: the former `stefanreinauer/amiga-gcc`-based images, kept as a rollback path |
@@ -23,15 +23,17 @@ gmp/mpfr/mpc prerequisites) is pinned by commit or sha256.
 
 Toolchain at `/opt/amiga` (also reachable as `/opt/m68k-amigaos`, on `PATH`):
 
-* **gcc 16.2.0b** (C, C++, ObjC; 10 multilibs: 68000/020/060 × baserel variants × 68881),
-  **binutils 2.46** with HUNK support, **libnix** (`-mcrt=nix20` / `-noixemul`, `nix13`), **clib2**,
-  **newlib** headers, **libdebug**, **libpthread**, **libamiga**. gmp, mpfr and mpc are built
+* **gcc 16.2.1b** (C, C++, ObjC; 8 multilibs: 68000 and 68020-60 × baserel variants × 68881; one
+  020 multilib, built with `-m68020-60`, serves every 020-class CPU, and `-mhard-float` selects
+  its 68881 variant), **binutils 2.46** with HUNK support, **libnix** (`-mcrt=nix20` / `-noixemul`,
+  `nix13`), **clib2**, **newlib 4.6** headers, **libdebug**, **libpthread**, **libamiga**. gmp, mpfr and mpc are built
   in-tree, so neither compiler depends on the host distribution's copies.
 * **NDK 3.2 R4** (Aminet `NDK3.2.lha`, sha256-pinned) integrated as `m68k-amigaos/ndk-include`:
   `proto/`, `inline/`, `lvo/` generated with **sfdc 1.13**; the Roadshow TCP/IP `netinclude`
   (`sys/socket.h`, `proto/bsdsocket.h`, …) from `AmigaPorts/amiga-netinclude`, with its
   `inline/bsdsocket.h` generated here from the NDK's own SFD (see below); AROS' open
-  `devices/sana2.h` + `sana2specialstats.h` (pinned AROS commit).
+  `devices/sana2.h` + `sana2specialstats.h`, as the orchestrator ships them (with the APL
+  notice, `devices/LICENSE.AROS-APL`).
 * **AHI 6.0 developer headers** (`devices/ahi.h`, `libraries/ahi_sub.h`, `proto/ahi.h`).
 * **P96 3.6.1 developer headers** (iComp's `P96Develop.lha`, installed by the orchestrator's
   `sdk/p96.sdk`): the vendor's own `proto/Picasso96.h`, `clib/Picasso96_protos.h`,
@@ -101,24 +103,24 @@ scripts/update-lock.py gcc sfdc   # ...only these rows
 
 Each row carries everything about one input: where it is checked out or downloaded to (`dest`,
 relative to `/src`), which file's presence stops the orchestrator's Makefile from cloning the
-module itself (`marker`), whether its clone rule also applies local patches (`patched`), and,
-for a file the Makefile pins as well, the variable it pins it with (`makefile_pin`: the NDK
-archive and the three gcc prerequisites), and for an archive the orchestrator installs with
+module itself (`marker`), for a file the orchestrator pins as well, the name its
+`default-archives` lists it under (`archive`: the NDK archive and the three gcc prerequisites),
+and for an archive the orchestrator installs with
 `make sdk=<name>`, that descriptor's name (`sdk`: AHI, P96; the descriptor's `Url:` and `Sha256:`
 must agree with the row, and the build installs every SDK the lock names).
 `scripts/fetch-sources.py` is driven entirely by those fields, so adding or moving an input is a
 lock edit rather than a script edit.
 
 A git row without `dest` is never checked out: it only pins the commit that `@<name>@` in the
-URLs of loose files expands to (`aros` for the SANA-II headers; `devicetree.resource`,
-`mailbox.resource` and `cma.resource` for the Emu68 resource SFDs). Moving such a pin needs
+URLs of loose files expands to (`devicetree.resource`, `mailbox.resource` and `cma.resource`
+for the Emu68 resource SFDs). Moving such a pin needs
 `--files` as well, to re-hash the files it serves. Another SFD-only interface is one such row
 plus a file row with `dest` under `extra/sfd/` (and `extra/include/` for a header of its own).
 
-A `makefile_pin` mismatch fails the sources stage. It means upstream moved to another version of
-that archive: the Makefile's download rule names the file after the version it pins, so the
-pre-downloaded one no longer satisfies it and the offline build step would go looking for the
-network. Follow the new version in the row's `name`, `url`, `dest` and `sha256`.
+An `archive` mismatch fails the sources stage. It means upstream moved to another version of
+that archive: the Makefile's download rule wants the file and checksum `default-archives` gives,
+so the pre-downloaded one no longer satisfies it and the offline build step would go looking for
+the network. Follow the new version in the row's `name`, `url`, `dest` and `sha256`.
 
 Review the diff, commit, push. CI rebuilds the toolchain stage,
 runs the in-image smoke test, builds `emu68-driver-stack` and `neptune-usb-stack` with the
