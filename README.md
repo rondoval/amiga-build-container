@@ -46,6 +46,9 @@ Toolchain at `/opt/amiga` (also reachable as `/opt/m68k-amigaos`, on `PATH`):
   `inline/` and `lvo/` generated here by sfdc with the same modes as the other SDK headers, the
   SFDs installed under `lib/sfd/`. Include `<proto/devicetree.h>`, `<proto/mailbox.h>`,
   `<resources/cma.h>` and `<proto/cma.h>`.
+* **videocodec.library headers** (`emu68-vchiq-library`; its SFD and `libraries/videocodec.h` at a
+  pinned commit): `clib/`, `proto/`, `inline/` and `lvo/` generated the same way. Include
+  `<libraries/videocodec.h>` and `<proto/videocodec.h>`.
 * Host tools: `sfdc`, `fd2sfd`, `fd2pragma`, `vasm`, `ira`, `lha` (lha-ac, with the
   `--system-kanji-code`/`--archive-kanji-code` options), `flexcat`, plus `cmake` 4.2, `make`, `xxd`,
   `git`, `python3`, `perl`.
@@ -113,7 +116,7 @@ lock edit rather than a script edit.
 
 A git row without `dest` is never checked out: it only pins the commit that `@<name>@` in the
 URLs of loose files expands to (`devicetree.resource`, `mailbox.resource` and `cma.resource`
-for the Emu68 resource SFDs). Moving such a pin needs
+for the Emu68 resource SFDs, `emu68-vchiq-library` for videocodec.library's). Moving such a pin needs
 `--files` as well, to re-hash the files it serves. Another SFD-only interface is one such row
 plus a file row with `dest` under `extra/sfd/` (and `extra/include/` for a header of its own).
 

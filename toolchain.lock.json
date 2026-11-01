@@ -6,7 +6,7 @@
       "name": "m68k-amigaos-gcc",
       "url": "https://github.com/AmigaPorts/m68k-amigaos-gcc",
       "ref": "master",
-      "pin": "a83871b3a2dff029ab314639451360577dbb8ffe",
+      "pin": "e4ef60a4b4458e9ecd382776853b0597db5b134e",
       "dest": "amiga-gcc",
       "note": "the orchestrator: its Makefile builds every module below"
     },
@@ -14,7 +14,7 @@
       "name": "gcc",
       "url": "https://github.com/AmigaPorts/gcc",
       "ref": "amiga16.2",
-      "pin": "06a35910940c8aea01ec85b8270770342aa88a88",
+      "pin": "bc3da4265c1319cf946136cb8e57b2e43638bc7f",
       "dest": "amiga-gcc/projects/gcc",
       "marker": "configure"
     },
@@ -22,7 +22,7 @@
       "name": "binutils",
       "url": "https://github.com/AmigaPorts/binutils-gdb",
       "ref": "amiga-2.46",
-      "pin": "15f4b0aa860f74022c6aff7ace15bc0a307d5510",
+      "pin": "95312c65a3e70dd24e80b30b5e33f8deb591fe03",
       "dest": "amiga-gcc/projects/binutils",
       "marker": "configure"
     },
@@ -30,7 +30,7 @@
       "name": "newlib-cygwin",
       "url": "https://github.com/AmigaPorts/newlib-cygwin",
       "ref": "amiga",
-      "pin": "16731e68379f87809e9f280f565c34dd648971ec",
+      "pin": "06518f4f051cfd59fe3ee757ee40137dd8a36817",
       "dest": "amiga-gcc/projects/newlib-cygwin",
       "marker": "newlib/configure"
     },
@@ -38,7 +38,7 @@
       "name": "libnix",
       "url": "https://github.com/AmigaPorts/libnix",
       "ref": "master",
-      "pin": "c4fd616d48ab29754de88589888f078259fb4565",
+      "pin": "779004e4ad752746dea96b8f93939f31b492e879",
       "dest": "amiga-gcc/projects/libnix",
       "marker": "Makefile.gcc6"
     },
@@ -46,7 +46,7 @@
       "name": "clib2",
       "url": "https://github.com/AmigaPorts/clib2",
       "ref": "master",
-      "pin": "78e05e255495382bbf880d0d37d20763d129f01e",
+      "pin": "d934a6450dc488952fa6a6f8731f4696ae631668",
       "dest": "amiga-gcc/projects/clib2",
       "marker": "LICENSE"
     },
@@ -62,7 +62,7 @@
       "name": "sfdc",
       "url": "https://github.com/AmigaPorts/sfdc",
       "ref": "master",
-      "pin": "4e7afc044c1ff129574fcf3b839c3351edcfe2fb",
+      "pin": "4c670c89a1e56708371b5e863421b10302a2e2c1",
       "dest": "amiga-gcc/projects/sfdc",
       "marker": "configure"
     },
@@ -102,7 +102,7 @@
       "name": "aros-stuff",
       "url": "https://github.com/AmigaPorts/aros-stuff",
       "ref": "master",
-      "pin": "469a7dc16efe1e04784e75cd50c23b0162e99c4c",
+      "pin": "2cb0958d9b1d3642132e8c63d73028438c45c265",
       "dest": "amiga-gcc/projects/aros-stuff",
       "marker": "pthreads/Makefile"
     },
@@ -110,7 +110,7 @@
       "name": "amiga-netinclude",
       "url": "https://github.com/AmigaPorts/amiga-netinclude",
       "ref": "main",
-      "pin": "864c5395aeaf2f7600bdd24f8befcb0b517ed357",
+      "pin": "a2529359b2e06bf9b0a92765f73a5f172378fe8b",
       "dest": "amiga-gcc/projects/amiga-netinclude",
       "marker": "README.md"
     },
@@ -148,6 +148,12 @@
       "url": "https://github.com/michalsc/cma.resource",
       "ref": "master",
       "pin": "c5373f251f5f31b4543921ae94820b5b7313c8c0"
+    },
+    {
+      "name": "emu68-vchiq-library",
+      "url": "https://github.com/rondoval/emu68-vchiq-library",
+      "ref": "main",
+      "pin": "b0a1547878a358474174b00058d7a20f3342edcc"
     }
   ],
   "files": [
@@ -222,6 +228,19 @@
       "sha256": "1943206db89b354bc60a45f89c9800bb022a47d8ba1a5206ad9860bb43162015",
       "dest": "extra/include/resources/cma.h",
       "note": "installed under m68k-amigaos/include/ with everything else in extra/include/"
+    },
+    {
+      "name": "videocodec_lib.sfd",
+      "url": "https://raw.githubusercontent.com/rondoval/emu68-vchiq-library/@emu68-vchiq-library@/videocodec/sfd/videocodec.sfd",
+      "sha256": "d8583c666ac4c93612a8f1a9faa627afa185a4ca03ac0f04a3a958544021fd30",
+      "dest": "extra/sfd/videocodec_lib.sfd",
+      "note": "videocodec.library's interface (BSD-3-Clause); renamed, as build-toolchain.sh takes extra/sfd/*_lib.sfd"
+    },
+    {
+      "name": "videocodec.h",
+      "url": "https://raw.githubusercontent.com/rondoval/emu68-vchiq-library/@emu68-vchiq-library@/videocodec/include/libraries/videocodec.h",
+      "sha256": "d4ef15aa620816a30e6fee43a1271c9a61b8659de96f00d504305fb3f9603768",
+      "dest": "extra/include/libraries/videocodec.h"
     },
     {
       "name": "MUI-5.0-20210831-os3.lha",

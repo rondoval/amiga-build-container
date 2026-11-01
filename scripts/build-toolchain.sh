@@ -52,7 +52,9 @@ install -m755 "$SRC/flexcat/src/bin_unix/flexcat" "$PREFIX/bin/flexcat"
 # NEWLIB_BINUTILS_PREREQ: with HOST empty the Makefile makes newlib (hence libnix, hence
 # everything, including `sdk`) wait for the gdb stamp; point it at the binutils stamp so gdb is
 # never built. Every make invocation must carry it.
-make_args=(PREFIX="$PREFIX" NEWLIB_BINUTILS_PREREQ="$BUILD/binutils/_done")
+# PKGVERSION: left alone it comes from git describe in projects/gcc, and fetch-sources.py drops the
+# .git trees, which leaves "(AmigaDev -g)" in every tool's --version.
+make_args=(PREFIX="$PREFIX" NEWLIB_BINUTILS_PREREQ="$BUILD/binutils/_done" PKGVERSION=AmigaDev)
 dump_logs() { echo "build-toolchain: make failed; last lines of the per-step logs:" >&2; for f in log/*; do echo "==== $f"; tail -n 60 "$f"; done >&2; }
 
 echo ">> make $TARGETS"
