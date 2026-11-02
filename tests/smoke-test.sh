@@ -252,9 +252,10 @@ struct BitMap *use_p96(void) { return p96AllocBitMap(640, 480, 32, BMF_USERPRIVA
 CONST_STRPTR use_dt(void) { return DT_GetKeyName(DT_OpenKey((CONST_STRPTR)"/emu68")); }
 ULONG use_mailbox(void) { return MB_GetClockRate(4); }
 APTR use_cma(void) { return CMA_AllocAligned(65536, 4096); }
-/* videocodec.library: a plain call and a tag call */
+/* videocodec.library: a plain call and a tag call; a codec row as of 0.4 */
 void use_vc(struct VCSession *s) { VC_CloseSession(s); }
 struct VCSession *use_vc_tags(void) { return VC_OpenSessionTags(VCA_Codec, VCC_H264, TAG_END); }
+ULONG use_vc_formats(struct VCCodecInfo *ci) { return ci->InputFormats | ci->OutputFormats; }
 /* a "no return value" bsdsocket inline (the hand-written Roadshow header failed here on GCC >= 9) */
 void use_inline(struct List *l) { ReleaseInterfaceList(l); }
 /* a bsdsocket varargs wrapper (the hand-written header needed a typedef sfdc 1.13 stopped emitting) */

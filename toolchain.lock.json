@@ -153,7 +153,7 @@
       "name": "emu68-vchiq-library",
       "url": "https://github.com/rondoval/emu68-vchiq-library",
       "ref": "main",
-      "pin": "b0a1547878a358474174b00058d7a20f3342edcc"
+      "pin": "16495d16ad4dc5321cc133e640c7e7c484de9c10"
     }
   ],
   "files": [
@@ -239,7 +239,7 @@
     {
       "name": "videocodec.h",
       "url": "https://raw.githubusercontent.com/rondoval/emu68-vchiq-library/@emu68-vchiq-library@/videocodec/include/libraries/videocodec.h",
-      "sha256": "d4ef15aa620816a30e6fee43a1271c9a61b8659de96f00d504305fb3f9603768",
+      "sha256": "c1245bbb9ff7cbc80dfd4d78b4716c3e6376caa116ea376a2a5c72035148a00e",
       "dest": "extra/include/libraries/videocodec.h"
     },
     {
