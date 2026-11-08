@@ -153,7 +153,7 @@
       "name": "emu68-vchiq-library",
       "url": "https://github.com/rondoval/emu68-vchiq-library",
       "ref": "main",
-      "pin": "16495d16ad4dc5321cc133e640c7e7c484de9c10"
+      "pin": "e4b497fdf1371551a86fa1ea53bb1705ba8d56fe"
     }
   ],
   "files": [
@@ -232,14 +232,14 @@
     {
       "name": "videocodec_lib.sfd",
       "url": "https://raw.githubusercontent.com/rondoval/emu68-vchiq-library/@emu68-vchiq-library@/videocodec/sfd/videocodec.sfd",
-      "sha256": "d8583c666ac4c93612a8f1a9faa627afa185a4ca03ac0f04a3a958544021fd30",
+      "sha256": "6447443f41b2d74b2289740696f9670fd33943f5d0537c9b66d6fb8bff4ec036",
       "dest": "extra/sfd/videocodec_lib.sfd",
       "note": "videocodec.library's interface (BSD-3-Clause); renamed, as build-toolchain.sh takes extra/sfd/*_lib.sfd"
     },
     {
       "name": "videocodec.h",
       "url": "https://raw.githubusercontent.com/rondoval/emu68-vchiq-library/@emu68-vchiq-library@/videocodec/include/libraries/videocodec.h",
-      "sha256": "c1245bbb9ff7cbc80dfd4d78b4716c3e6376caa116ea376a2a5c72035148a00e",
+      "sha256": "27dfcadeab50fd7b98b1eef9959fbbfd79c7c52035de4b19d6c3d51e9d01ccc4",
       "dest": "extra/include/libraries/videocodec.h"
     },
     {
