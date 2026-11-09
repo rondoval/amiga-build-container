@@ -6,7 +6,7 @@
       "name": "m68k-amigaos-gcc",
       "url": "https://github.com/AmigaPorts/m68k-amigaos-gcc",
       "ref": "master",
-      "pin": "e4ef60a4b4458e9ecd382776853b0597db5b134e",
+      "pin": "c40f9e09051b6819c34eb6765595641230977019",
       "dest": "amiga-gcc",
       "note": "the orchestrator: its Makefile builds every module below"
     },
@@ -14,7 +14,7 @@
       "name": "gcc",
       "url": "https://github.com/AmigaPorts/gcc",
       "ref": "amiga16.2",
-      "pin": "bc3da4265c1319cf946136cb8e57b2e43638bc7f",
+      "pin": "a437b637690dfea4fc03db3489cb68114c5ca3da",
       "dest": "amiga-gcc/projects/gcc",
       "marker": "configure"
     },
@@ -22,7 +22,7 @@
       "name": "binutils",
       "url": "https://github.com/AmigaPorts/binutils-gdb",
       "ref": "amiga-2.46",
-      "pin": "95312c65a3e70dd24e80b30b5e33f8deb591fe03",
+      "pin": "182a5100c88386b6f59b38c4d89eb150235f92c2",
       "dest": "amiga-gcc/projects/binutils",
       "marker": "configure"
     },
@@ -30,7 +30,7 @@
       "name": "newlib-cygwin",
       "url": "https://github.com/AmigaPorts/newlib-cygwin",
       "ref": "amiga",
-      "pin": "06518f4f051cfd59fe3ee757ee40137dd8a36817",
+      "pin": "826e08539857e45d536eca3e2eea7db1c3067a92",
       "dest": "amiga-gcc/projects/newlib-cygwin",
       "marker": "newlib/configure"
     },
@@ -38,7 +38,7 @@
       "name": "libnix",
       "url": "https://github.com/AmigaPorts/libnix",
       "ref": "master",
-      "pin": "779004e4ad752746dea96b8f93939f31b492e879",
+      "pin": "a5ce7231e6a5b1d2d07453c6532a046715b43665",
       "dest": "amiga-gcc/projects/libnix",
       "marker": "Makefile.gcc6"
     },
@@ -46,7 +46,7 @@
       "name": "clib2",
       "url": "https://github.com/AmigaPorts/clib2",
       "ref": "master",
-      "pin": "d934a6450dc488952fa6a6f8731f4696ae631668",
+      "pin": "0481d635fe852f7ef150d712a9a12726a03463e3",
       "dest": "amiga-gcc/projects/clib2",
       "marker": "LICENSE"
     },
@@ -102,7 +102,7 @@
       "name": "aros-stuff",
       "url": "https://github.com/AmigaPorts/aros-stuff",
       "ref": "master",
-      "pin": "2cb0958d9b1d3642132e8c63d73028438c45c265",
+      "pin": "2e5582beca7525c77f96fcb2b8c3e1d01dd76b7d",
       "dest": "amiga-gcc/projects/aros-stuff",
       "marker": "pthreads/Makefile"
     },
