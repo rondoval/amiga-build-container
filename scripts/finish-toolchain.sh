@@ -26,10 +26,14 @@ grep -q '^#include <proto/cardres.h>' "$inc/inline/cardres.h" \
 	|| { echo "inline/cardres.h does not reference proto/cardres.h (--protoname lost?)" >&2; exit 1; }
 grep -q '^/\* Automatically generated header (sfdc' "$inc/inline/bsdsocket.h" \
 	|| { echo "inline/bsdsocket.h is not the sfdc-generated header" >&2; exit 1; }
-# SANA-II: the orchestrator's own copies (patches/NDK3.2), complete with the include of
-# utility/tagitem.h (TAG_USER) and the AROS licence they refer to.
-grep -q '^#include <utility/tagitem.h>' "$inc/devices/sana2.h" \
-	|| { echo "devices/sana2.h is not the orchestrator's copy" >&2; exit 1; }
+# SANA-II: the NDK's own pair (build-toolchain.sh), the revision with the extended statistics,
+# not the orchestrator's older AROS copies.
+for h in sana2.h sana2specialstats.h; do
+	grep -q 'Copyright 1991-2003 Amiga, Inc' "$inc/devices/$h" \
+		|| { echo "devices/$h is not the NDK's own header" >&2; exit 1; }
+done
+grep -q 'S2_SAMPLE_THROUGHPUT' "$inc/devices/sana2.h" \
+	|| { echo "devices/sana2.h lacks S2_SAMPLE_THROUGHPUT" >&2; exit 1; }
 
 # Paths the consumer stacks rely on (toolchain.cmake and their CMake lists).  The LTO rows
 # are load-bearing: the stacks build with -flto, and a binutils configured --disable-plugins
@@ -48,7 +52,6 @@ for f in \
 	m68k-amigaos/ndk-include/proto/exec.h m68k-amigaos/ndk-include/inline/exec.h \
 	m68k-amigaos/ndk-include/inline/bsdsocket.h m68k-amigaos/ndk-include/sys/socket.h \
 	m68k-amigaos/ndk-include/devices/sana2.h m68k-amigaos/ndk-include/devices/sana2specialstats.h \
-	m68k-amigaos/ndk-include/devices/LICENSE.AROS-APL \
 	m68k-amigaos/ndk-include/devices/newstyle.h m68k-amigaos/ndk/lib/sfd/exec_lib.sfd \
 	m68k-amigaos/ndk/lib/sfd/bsdsocket_lib.sfd \
 	m68k-amigaos/include/devices/ahi.h m68k-amigaos/include/libraries/ahi_sub.h m68k-amigaos/include/proto/ahi.h \

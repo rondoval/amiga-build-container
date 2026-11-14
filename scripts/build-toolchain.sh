@@ -10,7 +10,8 @@
 #                                lha as the NDK unpack's and the SDK installer's)
 #   sdk=<each line of SDKS>     (ahi: neptune's audio class; p96: emu68's vchiq tools)
 #   flexcat                     host tool, built here from its pinned source
-#   two NDK headers the orchestrator gets wrong, generated here with the same sfdc + NDK archive
+#   NDK headers the orchestrator gets wrong: two generated here with the same sfdc + NDK
+#                               archive, the SANA-II pair installed from that archive
 #   headers for the SFD-only interfaces in extra/sfd (the Emu68 resources), same sfdc
 set -euo pipefail
 
@@ -69,9 +70,10 @@ done < "$SRC/SDKS"
 
 install -m644 "$SRC/SOURCES" "$PREFIX/etc/SOURCES"
 
-# ---- two NDK headers the orchestrator gets wrong ------------------------------------------
-# Generated with the pinned sfdc from the pinned NDK archive, exactly like the other headers;
-# nothing is edited. Both are upstream inconsistencies (see README) and can go once fixed there.
+# ---- NDK headers the orchestrator gets wrong -----------------------------------------------
+# Generated with the pinned sfdc from the pinned NDK archive, exactly like the other headers, or
+# installed from that archive as it is; nothing is edited. All are upstream inconsistencies (see
+# README) and can go once fixed there.
 ndk=$ORCH/projects/NDK3.2
 ndkinc=$PREFIX/m68k-amigaos/ndk-include
 sfdc=$PREFIX/bin/sfdc
@@ -95,6 +97,16 @@ echo ">> bsdsocket: inline header generated from the NDK's Roadshow SFD"
 install -m644 "$ndk/SANA+RoadshowTCP-IP/sfd/bsdsocket_lib.sfd" "$PREFIX/m68k-amigaos/ndk/lib/sfd/"
 "$sfdc" --target=m68k-gcc-amigaos --mode=macros --quiet \
 	--output="$ndkinc/inline/bsdsocket.h" "$PREFIX/m68k-amigaos/ndk/lib/sfd/bsdsocket_lib.sfd"
+
+# SANA-II: the orchestrator ships AROS' devices/sana2.h + sana2specialstats.h, an older revision
+# of the interface: no extended statistics, throughput sampling or connection commands
+# (S2_GETEXTENDEDGLOBALSTATS, S2_SAMPLE_THROUGHPUT, S2_CONNECT, ...). The NDK archive carries the
+# current pair in its SANA+RoadshowTCP-IP drawer; install it over them. Their APL notice goes with
+# them: no AROS-licensed file is left in devices/.
+echo ">> SANA-II: the NDK's own devices/sana2.h and sana2specialstats.h"
+install -m644 "$ndk/SANA+RoadshowTCP-IP/include/devices/sana2.h" \
+	"$ndk/SANA+RoadshowTCP-IP/include/devices/sana2specialstats.h" "$ndkinc/devices/"
+rm -f "$ndkinc/devices/LICENSE.AROS-APL"
 
 # ---- SFD-only interfaces (the Emu68 resources) --------------------------------------------
 # Upstream ships only the SFD (plus, for cma, a public header). Generate the headers with the

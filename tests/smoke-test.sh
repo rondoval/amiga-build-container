@@ -281,6 +281,18 @@ EOF
 check "fixed-address reads (SysBase at 4, MMIO) compile with -Warray-bounds on" \
 	"$CC" -O2 -m68040 -mhard-float -mcrt=nix20 -Wall -Wextra -Werror -c absaddr.c -o absaddr.o
 check "SANA2_INCLUDE_DIR points at devices/sana2.h" test -f "${SANA2_INCLUDE_DIR:?SANA2_INCLUDE_DIR unset}/devices/sana2.h"
+cat > sana2.c <<'EOF'
+#include <devices/sana2.h>
+#include <devices/sana2specialstats.h>
+ULONG sana2_current(struct IOSana2Req *io, struct Sana2ExtDeviceStats *stats, struct Sana2ThroughputStats *sample)
+{
+	io->ios2_Req.io_Command = S2_SAMPLE_THROUGHPUT;
+	io->ios2_StatData = sample;
+	return S2_GETEXTENDEDGLOBALSTATS + stats->s2xds_Length + S2EVENT_CONFIGCHANGED;
+}
+EOF
+check "devices/sana2.h is the NDK's: extended statistics, throughput sampling" \
+	"$CC" -O2 -m68040 -mhard-float -mcrt=nix20 -Wall -Wextra -Werror -c sana2.c -o sana2.o
 check "MUI SDK has the explicit-base inline path" test -f "$MUI_INCLUDE_DIR/inline/muimaster.h" -a -f "$MUI_INCLUDE_DIR/defines/muimaster.h"
 check "libraries/keymap.h (NDK 3.2 addition)" test -f "$PREFIX/m68k-amigaos/ndk-include/libraries/keymap.h"
 check "provenance manifest present" test -s "$PREFIX/etc/SOURCES" -a -s "$PREFIX/etc/toolchain.lock.json"
