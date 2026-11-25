@@ -5,8 +5,9 @@
 #            `final` target as ghcr.io/<owner>/amiga-build-container:sha-<git7> (the candidate).
 #            The toolchain stage is restored from the registry build cache unless
 #            toolchain.lock.json or scripts/ changed (then it is rebuilt: ~35 min on a hosted runner).
-#   smoke    builds emu68-driver-stack and neptune-usb-stack with the candidate, through their
-#            own scripts/docker-build.sh (neptune's also runs its MUI 3.8 subset check).
+#   smoke    builds emu68-driver-stack, neptune-usb-stack and kinora (with the video libraries it
+#            builds: they take devices/vchiq.h and gic400's headers from here) with the candidate,
+#            through their own scripts/docker-build.sh (neptune's also runs its MUI 3.8 subset check).
 #   promote  re-tags the candidate as gcc-v16.2 and latest (manifest copy, no blob upload).
 #
 # Pull requests only run the build (no push, no smoke, no promote). Old gcc-v* tags are never
@@ -130,6 +131,11 @@ jobs:
             image_var: NEPTUNE_BUILD_IMAGE
             args_var: NEPTUNE_CONFIGURE_ARGS
             args: "-DM68K_CPU=68060 -DM68K_FPU=hard"
+          - name: kinora
+            repo: rondoval/kinora
+            image_var: KINORA_BUILD_IMAGE
+            args_var: KINORA_CONFIGURE_ARGS
+            args: ""
     name: smoke (${{ matrix.name }})
     steps:
       - name: Checkout ${{ matrix.repo }}
