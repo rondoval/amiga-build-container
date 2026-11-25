@@ -150,10 +150,23 @@
       "pin": "c5373f251f5f31b4543921ae94820b5b7313c8c0"
     },
     {
-      "name": "emu68-vchiq-library",
-      "url": "https://github.com/rondoval/emu68-vchiq-library",
+      "name": "emu68-vchiq-driver",
+      "url": "https://github.com/rondoval/emu68-vchiq-driver",
       "ref": "main",
-      "pin": "c3f8017073827036de24ecd509574a01d274df54"
+      "pin": "c3f8017073827036de24ecd509574a01d274df54",
+      "note": "vchiq.device's public header only (devices/vchiq.h); the video libraries' interface is videocodec-library's"
+    },
+    {
+      "name": "videocodec-library",
+      "url": "https://github.com/rondoval/videocodec-library",
+      "ref": "main",
+      "pin": "e9e9df2fc24281c75a74fe63d3878144773faa5f"
+    },
+    {
+      "name": "emu68-gic400-library",
+      "url": "https://github.com/rondoval/emu68-gic400-library",
+      "ref": "main",
+      "pin": "c6dfbfcb47426f8c040ceaec5e2d4b30cd6cb7dd"
     }
   ],
   "files": [
@@ -231,16 +244,36 @@
     },
     {
       "name": "videocodec_lib.sfd",
-      "url": "https://raw.githubusercontent.com/rondoval/emu68-vchiq-library/@emu68-vchiq-library@/videocodec/sfd/videocodec.sfd",
+      "url": "https://raw.githubusercontent.com/rondoval/videocodec-library/@videocodec-library@/videocodec/sfd/videocodec.sfd",
       "sha256": "6447443f41b2d74b2289740696f9670fd33943f5d0537c9b66d6fb8bff4ec036",
       "dest": "extra/sfd/videocodec_lib.sfd",
       "note": "videocodec.library's interface (BSD-3-Clause); renamed, as build-toolchain.sh takes extra/sfd/*_lib.sfd"
     },
     {
       "name": "videocodec.h",
-      "url": "https://raw.githubusercontent.com/rondoval/emu68-vchiq-library/@emu68-vchiq-library@/videocodec/include/libraries/videocodec.h",
+      "url": "https://raw.githubusercontent.com/rondoval/videocodec-library/@videocodec-library@/videocodec/include/libraries/videocodec.h",
       "sha256": "640b1c022b48c0a18e9f7ab5b8990f9663957188a0c9b2658ed6fa9c69cc3baf",
       "dest": "extra/include/libraries/videocodec.h"
+    },
+    {
+      "name": "vchiq.h",
+      "url": "https://raw.githubusercontent.com/rondoval/emu68-vchiq-driver/@emu68-vchiq-driver@/vchiq/include/devices/vchiq.h",
+      "sha256": "29cdee3e45fd9dedff171afc32b14beffe851d4ef07e9980597eb4d068adcdce",
+      "dest": "extra/include/devices/vchiq.h",
+      "note": "vchiq.device's public header (BSD-3-Clause), for videocodec-library's videocore.codec and its rig"
+    },
+    {
+      "name": "gic400_lib.sfd",
+      "url": "https://raw.githubusercontent.com/rondoval/emu68-gic400-library/@emu68-gic400-library@/sfd/gic400.sfd",
+      "sha256": "632e5ad4ab45b00ea00d6ba2b68a0a1441042dfd28450705b0589da3d90912c4",
+      "dest": "extra/sfd/gic400_lib.sfd",
+      "note": "gic400.library's interface (MPL-2.0 OR GPL-2.0+), for rpivid-codec's interrupt; renamed, as build-toolchain.sh takes extra/sfd/*_lib.sfd"
+    },
+    {
+      "name": "gic400.h",
+      "url": "https://raw.githubusercontent.com/rondoval/emu68-gic400-library/@emu68-gic400-library@/include/libraries/gic400.h",
+      "sha256": "690e26b4c29c6e8ab312497db8f82c86621241aedb820fe1d67d324dba7c3611",
+      "dest": "extra/include/libraries/gic400.h"
     },
     {
       "name": "MUI-5.0-20210831-os3.lha",

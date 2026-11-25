@@ -45,9 +45,15 @@ Toolchain at `/opt/amiga` (also reachable as `/opt/m68k-amigaos`, on `PATH`):
   `inline/` and `lvo/` generated here by sfdc with the same modes as the other SDK headers, the
   SFDs installed under `lib/sfd/`. Include `<proto/devicetree.h>`, `<proto/mailbox.h>`,
   `<resources/cma.h>` and `<proto/cma.h>`.
-* **videocodec.library headers** (`emu68-vchiq-library`; its SFD and `libraries/videocodec.h` at a
+* **videocodec.library headers** (`videocodec-library`; its SFD and `libraries/videocodec.h` at a
   pinned commit): `clib/`, `proto/`, `inline/` and `lvo/` generated the same way. Include
-  `<libraries/videocodec.h>` and `<proto/videocodec.h>`.
+  `<libraries/videocodec.h>` and `<proto/videocodec.h>`. Programs built outside the video
+  libraries' own superbuild (Kinora) take them from here; Kinora takes its submodule's.
+* **gic400.library headers** (`emu68-gic400-library`; its SFD and `libraries/gic400.h` at a pinned
+  commit), generated the same way, for a driver built outside the Emu68 driver stack (rpivid-codec).
+  Include `<libraries/gic400.h>` and `<proto/gic400.h>`; the base is `GIC400_Base`.
+* **vchiq.device's public header** (`emu68-vchiq-driver`, `devices/vchiq.h` at a pinned commit),
+  for videocodec-library's VideoCore backend and its rig.
 * Host tools: `sfdc`, `fd2sfd`, `fd2pragma`, `vasm`, `ira`, `lha` (lha-ac, with the
   `--system-kanji-code`/`--archive-kanji-code` options), `flexcat`, plus `cmake` 4.2, `make`, `xxd`,
   `git`, `python3`, `perl`.
@@ -121,7 +127,8 @@ lock edit rather than a script edit.
 
 A git row without `dest` is never checked out: it only pins the commit that `@<name>@` in the
 URLs of loose files expands to (`devicetree.resource`, `mailbox.resource` and `cma.resource`
-for the Emu68 resource SFDs, `emu68-vchiq-library` for videocodec.library's). Moving such a pin needs
+for the Emu68 resource SFDs, `videocodec-library`, `emu68-gic400-library` and `emu68-vchiq-driver`
+for the video, interrupt and VCHIQ interfaces). Moving such a pin needs
 `--files` as well, to re-hash the files it serves. Another SFD-only interface is one such row
 plus a file row with `dest` under `extra/sfd/` (and `extra/include/` for a header of its own).
 
@@ -162,4 +169,6 @@ newlib and clib2 (their respective licenses, see the AmigaPorts repos), `lha` an
 the NDK 3.2 headers (public Aminet archive), the AHI developer kit (Aminet), the P96 developer files (CC-BY 4.0, © iComp / Jens Schönfeld,
 <https://wiki.icomp.de/wiki/P96>), the devicetree.resource, mailbox.resource and cma.resource
 SFDs and `resources/cma.h` (Mozilla Public License 2.0, <https://mozilla.org/MPL/2.0/>; sources at
-<https://github.com/michalsc>), and the **complete, unmodified** MUI 5.0 developer SDK.
+<https://github.com/michalsc>), the videocodec.library and vchiq.device headers (BSD-3-Clause,
+<https://github.com/rondoval>), the gic400.library SFD and header (MPL-2.0 or GPL-2.0-or-later,
+<https://github.com/rondoval/emu68-gic400-library>), and the **complete, unmodified** MUI 5.0 developer SDK.

@@ -239,6 +239,9 @@ cat > headers.c <<'EOF'
 #include <proto/cma.h>
 #include <libraries/videocodec.h>
 #include <proto/videocodec.h> /* videocodec.library: its own header, the rest generated from its SFD */
+#include <devices/vchiq.h>    /* vchiq.device's public header */
+#include <libraries/gic400.h>
+#include <proto/gic400.h>     /* gic400.library: its own header, the rest generated from its SFD */
 #include <libraries/mui.h>
 #include <string.h>
 #include <stdint.h>
@@ -246,6 +249,7 @@ struct Library *SocketBase;
 struct ExecBase *SysBase;
 struct Library *P96Base;
 struct Library *VideoCodecBase;
+struct Library *GIC400_Base;
 APTR DeviceTreeBase, MailboxBase, CMABase;
 /* one call through each of the four bases (P96's LPn macros, sfdc's inline stubs) */
 struct BitMap *use_p96(void) { return p96AllocBitMap(640, 480, 32, BMF_USERPRIVATE, NULL, RGBFB_A8R8G8B8); }
@@ -256,13 +260,16 @@ APTR use_cma(void) { return CMA_AllocAligned(65536, 4096); }
 void use_vc(struct VCSession *s) { VC_CloseSession(s); }
 struct VCSession *use_vc_tags(void) { return VC_OpenSessionTags(VCA_Codec, VCC_H264, TAG_END); }
 ULONG use_vc_formats(struct VCCodecInfo *ci) { return ci->InputFormats | ci->OutputFormats; }
+/* vchiq.device: a request and its info command; gic400.library: one call */
+ULONG use_vchiq(struct IOVchiqReq *io) { io->iovq_Req.io_Command = NSCMD_VQ_GETINFO; return io->iovq_FourCC; }
+LONG use_gic400(struct Interrupt *in) { return RemIntServerEx(42, in); }
 /* a "no return value" bsdsocket inline (the hand-written Roadshow header failed here on GCC >= 9) */
 void use_inline(struct List *l) { ReleaseInterfaceList(l); }
 /* a bsdsocket varargs wrapper (the hand-written header needed a typedef sfdc 1.13 stopped emitting) */
 LONG use_varargs(void) { return QueryInterfaceTags((STRPTR)"eth0", TAG_END); }
 struct NSDeviceQueryResult q = { 0, sizeof(struct NSDeviceQueryResult), NSDEVTYPE_SANA2, 0, NULL };
 EOF
-check "NDK 3.2 + netinclude + SANA-II + AHI + P96 + Emu68 resource + videocodec + MUI headers compile (-I\$MUI_INCLUDE_DIR)" \
+check "NDK 3.2 + netinclude + SANA-II + AHI + P96 + Emu68 resource + videocodec + vchiq + gic400 + MUI headers compile (-I\$MUI_INCLUDE_DIR)" \
 	"$CC" -O2 -m68040 -mhard-float -mcrt=nix20 -Wall -Wextra -Werror -I"${MUI_INCLUDE_DIR:?MUI_INCLUDE_DIR unset}" -c headers.c -o headers.o
 # ---- fixed addresses ----------------------------------------------------------------------------
 # The stacks read SysBase from address 4 (also through EXEC_BASE_NAME in the inline headers) and
